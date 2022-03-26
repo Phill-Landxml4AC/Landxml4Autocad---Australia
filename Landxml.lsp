@@ -237,8 +237,10 @@
 ;Revision1.15.1 -Fixed bug in header export version
 ;Revision1.15.2 -Fixed semantic error in landxml.dcl and set dcl auditing to 0 (found by Elliot Griffiths)
 ;Revision1.15.3 -Fixed bug with assigning scale factor to lines with field notes (found by Elliot Griffiths)
+;Revisino1.15.4 -Fixed ² not exporting properly for road names
+;               -Added area prompt for roads in XCR and XAR
 
-(setq version "1.15.3")
+(setq version "1.15.4")
 
 (REGAPP "LANDXML")
 
@@ -2667,13 +2669,25 @@
   (if (or (= lotstate "p")(= lotstate "P"))(setq lotstate "proposed"))
   (if (or (= lotstate "e")(= lotstate "E"))(setq lotstate "existing"))
   (if (= lotstate "")(setq lotstate "proposed"))
+
+
   
+  (setq area (getstring "\nArea or [C]alculate (mm.dm) (aa.rr.pp.f/p) [Last]:"))
+(if (or (= area "l")(= area "L")(= area "LAST")(= area "last"))(setq area "Last"))
+
+  (if (= area "Last" )(setq area arealast))
+  (SETQ arealast area)
+
+
+
   
-  (COMMAND "ERASE" ENTSS "")
+	
+(COMMAND "ERASE" ENTSS "")
 (SETQ lotedge (ENTLAST))
   (SETQ ENTSS (SSADD))
   (SSADD lotedge ENTSS)
   
+
   
 (SETQ SENT (ENTLAST))
   (SETQ SENTLIST (ENTGET SENT))
@@ -2705,25 +2719,159 @@
 
 
   (setq ptlist (append ptlist (list (nth 0 ptlist))))
+
+
+
+
   
+
+
+  
+(if (/= area "")
+  (progn
+  ;deal with imperial areas
+  
+      
+	(setq dotpos1 (vl-string-position 46 area 0))
+	(if (= dotpos1 nil)(setq dotpos2 nil)(setq dotpos2 (vl-string-position 46 area (+ dotpos1 1))))
+	(if (/= dotpos2 nil)(progn;idenfited as imperial area, must have second dotpos to work
+			      
+	(if (= dotpos2 nil)(setq dotpos3 nil)(setq dotpos3 (vl-string-position 46 area (+ dotpos2 1))))
+	(setq /pos1 (vl-string-position 47 area 0))
+	(if (/= /pos1 nil);with factional part
+	  (progn
+	    (setq den (substr area ( + /pos1 2) 50))
+	    (setq num (substr area ( + dotpos3 2) (- (- /pos1 dotpos3) 1)))
+	    (setq fperch (/ (atof num) (atof den)))
+	    (setq perch (substr area (+ dotpos2 2) (- (- dotpos3 dotpos2) 1)))
+	    (setq perch (+ fperch (atof perch)))
+	    (setq rood (substr area (+ dotpos1 2) (- (- dotpos2 dotpos1) 1)))
+	    (setq perch (+ perch (* (atof rood) 40)))
+	    (setq acre (substr area 1  dotpos1 ))
+	    (setq perch (+ perch (* (atof acre) 160)))
+	    (setq area (rtos (* perch 25.2929538117) 2 9))
+	    )
+	  )
+	(if (and (/= dotpos1 nil)(/= dotpos2 nil)(= /pos1 nil));without fractional part
+	  (progn
+	    (setq perch (substr area ( + dotpos2 2) 50))
+	    (setq perch (atof perch))
+	    (setq rood (substr area (+ dotpos1 2) (- (- dotpos2 dotpos1) 1)))
+	    (setq perch (+ perch (* (atof rood) 40)))
+	    (setq acre (substr area 1  dotpos1 ))
+	    (setq perch (+ perch (* (atof acre) 160)))
+	    (setq area (rtos (* perch 25.2929538117) 2 9))
+	    )
+	  )
+	
+	));p&if imperial area
+	  
+
+
+
+
+  
+   
+   (SETQ area1 (vlax-get-property (vlax-ename->vla-object sent ) 'area ))
+
+  (setvar "dimzin" 0)
+  (IF (or ( = area "C")(= area "c"))
+    (progn
+      (setq area (rtos area1 2 3))
+      (setq area1 (atof (rtos area1 2 3)));deal with recurring 9's
+
+      (if (= ard "YES")
+	(progn
+      					    (if (> area1 0)(setq textarea (strcat (rtos (* (fix (/ area1 0.001)) 0.001) 2 3) "m²")))
+					    (if (> area1 10)(setq textarea (strcat (rtos (* (fix (/ area1 0.01)) 0.01) 2 2) "m²")))
+					    (if (> area1 100)(setq textarea (strcat (rtos (* (fix (/ area1 0.1)) 0.1) 2 1) "m²")))
+					    (if (> area1 1000)(setq textarea (strcat (rtos (* (fix (/ area1 1)) 1) 2 0) "m²")))
+      					    (if (> area1 10000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 10000) 0.001)) 0.001) 2 3) "ha")))
+					    (if (> area1 100000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 10000) 0.01)) 0.01) 2 2) "ha")))
+					    (if (> area1 1000000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 10000) 0.1)) 0.1) 2 1) "ha")))
+					    (if (> area1 10000000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 10000) 1)) 1) 2 0) "ha")))
+                                            (if (> area1 100000000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 1000000) 0.1)) 0.1) 2 1) "km²")))
+                                            (if (> area1 1000000000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 1000000) 1)) 1) 2 0) "km²")))
+	  )
+	(progn
+	        			    (if (> area1 0)(setq textarea (strcat (rtos   area1 2 3) "m²")))
+					    (if (> area1 10)(setq textarea (strcat (rtos   area1  2 2) "m²")))
+					    (if (> area1 100)(setq textarea (strcat (rtos  area1  2 1) "m²")))
+					    (if (> area1 1000)(setq textarea (strcat (rtos area1  2 0) "m²")))
+      					    (if (> area1 10000) (setq textarea (strcat (rtos  (/ area1 10000)  2 3) "ha")))
+					    (if (> area1 100000) (setq textarea (strcat (rtos  (/ area1 10000)  2 2) "ha")))
+					    (if (> area1 1000000) (setq textarea (strcat (rtos  (/ area1 10000)  2 1) "ha")))
+					    (if (> area1 10000000) (setq textarea (strcat (rtos   (/ area1 10000) 2 0) "ha")))
+                                            (if (> area1 100000000) (setq textarea (strcat (rtos (/ area1 1000000)  2 1) "km²")))
+                                            (if (> area1 1000000000) (setq textarea (strcat (rtos  (/ area1 1000000) 2 0) "km²")))
+
+      ));if ard
+      
+					    
+      )
+    (progn
+     (setq areapercent (ABS(* (/  (- area1 (ATOF area)) area1) 100)))
+     (if (> areapercent 10) (alert (strcat "\nArea different to calulated by " (rtos areapercent 2 0)"%")))
+ (if (= ard "YES")
+	(progn
+                                            (if (> (atof area) 1)(setq textarea (strcat (rtos (atof area) 2 3) "m²")))
+      					    (if (> (atof area) 0)(setq textarea (strcat (rtos (* (fix (+(/ (atof area) 0.001)0.00001)) 0.001)  2 3) "m²")))
+					    (if (> (atof area) 10)(setq textarea (strcat (rtos (* (fix (+ (/ (atof area) 0.01) 0.00001)) 0.01) 2 2) "m²")))
+					    (if (> (atof area) 100)(setq textarea (strcat (rtos (* (fix (+(/ (atof area) 0.1) 0.00001)) 0.1) 2 1) "m²")))
+					    (if (> (atof area) 1000)(setq textarea (strcat (rtos (* (fix (+(/ (atof area) 1)0.00001)) 1) 2 0) "m²")))
+      					    (if (> (atof area) 10000) (setq textarea (strcat (rtos (* (fix (+(/ (/ (atof area) 10000) 0.001)0.00001)) 0.001) 2 3) "ha")))
+					    (if (> (atof area) 100000) (setq textarea (strcat (rtos (* (fix (+(/ (/ (atof area) 10000) 0.01)0.00001)) 0.01) 2 2) "ha")))
+					    (if (> (atof area) 1000000) (setq textarea (strcat (rtos (* (fix (+(/ (/ (atof area) 10000) 0.1)0.00001)) 0.1) 2 1) "ha")))
+					    (if (> (atof area) 10000000) (setq textarea (strcat (rtos (* (fix (+(/ (/ (atof area) 10000) 1)0.00001)) 1) 2 0) "ha")))
+                                            (if (> (atof area) 100000000) (setq textarea (strcat (rtos (* (fix (+ (/ (/ (atof area) 1000000) 0.1)0.00001)) 0.1) 2 1) "km²")))
+                                            (if (> (atof area) 1000000000) (setq textarea (strcat (rtos (* (fix (+(/ (/ (atof area) 1000000) 1)0.00001)) 1) 2 0) "km²")))
+	  )
+   (progn
+           			    (if (> area1 0)(setq textarea (strcat (rtos   area 2 3) "m²")))
+					    (if (> area1 10)(setq textarea (strcat (rtos   area  2 2) "m²")))
+					    (if (> area1 100)(setq textarea (strcat (rtos  area  2 1) "m²")))
+					    (if (> area1 1000)(setq textarea (strcat (rtos area  2 0) "m²")))
+      					    (if (> area1 10000) (setq textarea (strcat (rtos  (/ area 10000)  2 3) "ha")))
+					    (if (> area1 100000) (setq textarea (strcat (rtos  (/ area 10000)  2 2) "ha")))
+					    (if (> area1 1000000) (setq textarea (strcat (rtos  (/ area 10000)  2 1) "ha")))
+					    (if (> area1 10000000) (setq textarea (strcat (rtos   (/ area 10000) 2 0) "ha")))
+                                            (if (> area1 100000000) (setq textarea (strcat (rtos (/ area 1000000)  2 1) "km²")))
+                                            (if (> area1 1000000000) (setq textarea (strcat (rtos  (/ area 1000000) 2 0) "km²")))
+     ));if ard
+
+     )
+    )
+    ));if there is an area
+  (setvar "dimzin" 8)
+
+
+  
+  
+  
+  
+  
+   (if (/= area "")(setq areas (strcat " area=\"" area "\""))(setq areas ""))
  
 
   (setq lotc (trans lotc 1 0));convert to world if using UCS
-  (SETQ LTINFO (STRCAT "desc=\"" lotno "\" class=\"Road\" state=\"" lotstate "\" parcelType=\"Single\" parcelFormat=\"Standard\">!"
+  (SETQ LTINFO (STRCAT "desc=\"" lotno "\" class=\"Road\" state=\"" lotstate "\" parcelType=\"Single\" parcelFormat=\"Standard\"" areas ">!"
 		       (rtos (cadr lotc) 2 6 ) " " (rtos (car lotc) 2 6)))
 (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 LTINFO)))))
    (setq NEWSENTLIST (APPEND SENTLIST XDATA))
   (ENTMOD NEWSENTLIST)
 
   (setq THF 2)
+  (if (= area "") (setq just "MC")(setq just "BC"));if area exists set justification to bottom centre
 
   (setq lotc (trans lotc 0 1));convert back to UCS
   (SETVAR "CLAYER"  "Drafting" )
 	(SETVAR "CELWEIGHT" 50)				
-  (COMMAND "TEXT" "J" "MC" lotc (* TH THF) "90" lotno)
+  (COMMAND "TEXT" "J" just lotc (* TH THF) "90" lotno)
        (setq roadname (entget (entlast)))
+ 
+  
 (SETVAR "CELWEIGHT" -1)
-   (SETVAR "CLAYER" prevlayer) 
+  
 
 
 (setq lotc (trans lotc 1 0));convert to world if using UCS
@@ -2797,6 +2945,17 @@
 		     (assoc 50 roadname)
 		     roadname     ) )
   (ENTMOD roadname)
+
+
+  ;add area if there is one
+  (setq areapos (polar lotc (+ (* 1.5 pi) rrot) (* th 2.5)))
+  
+   (if (/= area "")(COMMAND "TEXT" "J" just areapos (* TH 1.4) (angtos rrot)  textarea ))
+(SETVAR "CELWEIGHT" -1)
+  
+    (SETVAR "CLAYER" prevlayer) 
+
+  
 (COMMAND "DRAWORDER" ENTSS "" "BACK")
 (setvar "pickstyle" pickstyle)
   )
@@ -6969,8 +7128,144 @@
   (if (or (= lotstate "p")(= lotstate "P"))(setq lotstate "proposed"))
   (if (or (= lotstate "e")(= lotstate "E"))(setq lotstate "existing"))
   (if (= lotstate "")(setq lotstate "proposed"))
+
+
+  (setq area (getstring "\nArea or [C]alculate (mm.dm) (aa.rr.pp.f/p) [Last]:"))
+(if (or (= area "l")(= area "L")(= area "LAST")(= area "last"))(setq area "Last"))
+
+  (if (= area "Last" )(setq area arealast))
+  (SETQ arealast area)
+
+
+
+    
+(if (/= area "")
+  (progn
+  ;deal with imperial areas
+  
+      
+	(setq dotpos1 (vl-string-position 46 area 0))
+	(if (= dotpos1 nil)(setq dotpos2 nil)(setq dotpos2 (vl-string-position 46 area (+ dotpos1 1))))
+	(if (/= dotpos2 nil)(progn;idenfited as imperial area, must have second dotpos to work
+			      
+	(if (= dotpos2 nil)(setq dotpos3 nil)(setq dotpos3 (vl-string-position 46 area (+ dotpos2 1))))
+	(setq /pos1 (vl-string-position 47 area 0))
+	(if (/= /pos1 nil);with factional part
+	  (progn
+	    (setq den (substr area ( + /pos1 2) 50))
+	    (setq num (substr area ( + dotpos3 2) (- (- /pos1 dotpos3) 1)))
+	    (setq fperch (/ (atof num) (atof den)))
+	    (setq perch (substr area (+ dotpos2 2) (- (- dotpos3 dotpos2) 1)))
+	    (setq perch (+ fperch (atof perch)))
+	    (setq rood (substr area (+ dotpos1 2) (- (- dotpos2 dotpos1) 1)))
+	    (setq perch (+ perch (* (atof rood) 40)))
+	    (setq acre (substr area 1  dotpos1 ))
+	    (setq perch (+ perch (* (atof acre) 160)))
+	    (setq area (rtos (* perch 25.2929538117) 2 9))
+	    )
+	  )
+	(if (and (/= dotpos1 nil)(/= dotpos2 nil)(= /pos1 nil));without fractional part
+	  (progn
+	    (setq perch (substr area ( + dotpos2 2) 50))
+	    (setq perch (atof perch))
+	    (setq rood (substr area (+ dotpos1 2) (- (- dotpos2 dotpos1) 1)))
+	    (setq perch (+ perch (* (atof rood) 40)))
+	    (setq acre (substr area 1  dotpos1 ))
+	    (setq perch (+ perch (* (atof acre) 160)))
+	    (setq area (rtos (* perch 25.2929538117) 2 9))
+	    )
+	  )
+	
+	));p&if imperial area
+	  
+
+
+
+
+  
+   
+   (SETQ area1 (vlax-get-property (vlax-ename->vla-object sent ) 'area ))
+
+  (setvar "dimzin" 0)
+  (IF (or ( = area "C")(= area "c"))
+    (progn
+      (setq area (rtos area1 2 3))
+      (setq area1 (atof (rtos area1 2 3)));deal with recurring 9's
+
+      (if (= ard "YES")
+	(progn
+      					    (if (> area1 0)(setq textarea (strcat (rtos (* (fix (/ area1 0.001)) 0.001) 2 3) "m²")))
+					    (if (> area1 10)(setq textarea (strcat (rtos (* (fix (/ area1 0.01)) 0.01) 2 2) "m²")))
+					    (if (> area1 100)(setq textarea (strcat (rtos (* (fix (/ area1 0.1)) 0.1) 2 1) "m²")))
+					    (if (> area1 1000)(setq textarea (strcat (rtos (* (fix (/ area1 1)) 1) 2 0) "m²")))
+      					    (if (> area1 10000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 10000) 0.001)) 0.001) 2 3) "ha")))
+					    (if (> area1 100000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 10000) 0.01)) 0.01) 2 2) "ha")))
+					    (if (> area1 1000000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 10000) 0.1)) 0.1) 2 1) "ha")))
+					    (if (> area1 10000000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 10000) 1)) 1) 2 0) "ha")))
+                                            (if (> area1 100000000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 1000000) 0.1)) 0.1) 2 1) "km²")))
+                                            (if (> area1 1000000000) (setq textarea (strcat (rtos (* (fix (/ (/ area1 1000000) 1)) 1) 2 0) "km²")))
+	  )
+	(progn
+	        			    (if (> area1 0)(setq textarea (strcat (rtos   area1 2 3) "m²")))
+					    (if (> area1 10)(setq textarea (strcat (rtos   area1  2 2) "m²")))
+					    (if (> area1 100)(setq textarea (strcat (rtos  area1  2 1) "m²")))
+					    (if (> area1 1000)(setq textarea (strcat (rtos area1  2 0) "m²")))
+      					    (if (> area1 10000) (setq textarea (strcat (rtos  (/ area1 10000)  2 3) "ha")))
+					    (if (> area1 100000) (setq textarea (strcat (rtos  (/ area1 10000)  2 2) "ha")))
+					    (if (> area1 1000000) (setq textarea (strcat (rtos  (/ area1 10000)  2 1) "ha")))
+					    (if (> area1 10000000) (setq textarea (strcat (rtos   (/ area1 10000) 2 0) "ha")))
+                                            (if (> area1 100000000) (setq textarea (strcat (rtos (/ area1 1000000)  2 1) "km²")))
+                                            (if (> area1 1000000000) (setq textarea (strcat (rtos  (/ area1 1000000) 2 0) "km²")))
+
+      ));if ard
+      
+					    
+      )
+    (progn
+     (setq areapercent (ABS(* (/  (- area1 (ATOF area)) area1) 100)))
+     (if (> areapercent 10) (alert (strcat "\nArea different to calulated by " (rtos areapercent 2 0)"%")))
+ (if (= ard "YES")
+	(progn
+                                            (if (> (atof area) 1)(setq textarea (strcat (rtos (atof area) 2 3) "m²")))
+      					    (if (> (atof area) 0)(setq textarea (strcat (rtos (* (fix (+(/ (atof area) 0.001)0.00001)) 0.001)  2 3) "m²")))
+					    (if (> (atof area) 10)(setq textarea (strcat (rtos (* (fix (+ (/ (atof area) 0.01) 0.00001)) 0.01) 2 2) "m²")))
+					    (if (> (atof area) 100)(setq textarea (strcat (rtos (* (fix (+(/ (atof area) 0.1) 0.00001)) 0.1) 2 1) "m²")))
+					    (if (> (atof area) 1000)(setq textarea (strcat (rtos (* (fix (+(/ (atof area) 1)0.00001)) 1) 2 0) "m²")))
+      					    (if (> (atof area) 10000) (setq textarea (strcat (rtos (* (fix (+(/ (/ (atof area) 10000) 0.001)0.00001)) 0.001) 2 3) "ha")))
+					    (if (> (atof area) 100000) (setq textarea (strcat (rtos (* (fix (+(/ (/ (atof area) 10000) 0.01)0.00001)) 0.01) 2 2) "ha")))
+					    (if (> (atof area) 1000000) (setq textarea (strcat (rtos (* (fix (+(/ (/ (atof area) 10000) 0.1)0.00001)) 0.1) 2 1) "ha")))
+					    (if (> (atof area) 10000000) (setq textarea (strcat (rtos (* (fix (+(/ (/ (atof area) 10000) 1)0.00001)) 1) 2 0) "ha")))
+                                            (if (> (atof area) 100000000) (setq textarea (strcat (rtos (* (fix (+ (/ (/ (atof area) 1000000) 0.1)0.00001)) 0.1) 2 1) "km²")))
+                                            (if (> (atof area) 1000000000) (setq textarea (strcat (rtos (* (fix (+(/ (/ (atof area) 1000000) 1)0.00001)) 1) 2 0) "km²")))
+	  )
+   (progn
+           			    (if (> area1 0)(setq textarea (strcat (rtos   area 2 3) "m²")))
+					    (if (> area1 10)(setq textarea (strcat (rtos   area  2 2) "m²")))
+					    (if (> area1 100)(setq textarea (strcat (rtos  area  2 1) "m²")))
+					    (if (> area1 1000)(setq textarea (strcat (rtos area  2 0) "m²")))
+      					    (if (> area1 10000) (setq textarea (strcat (rtos  (/ area 10000)  2 3) "ha")))
+					    (if (> area1 100000) (setq textarea (strcat (rtos  (/ area 10000)  2 2) "ha")))
+					    (if (> area1 1000000) (setq textarea (strcat (rtos  (/ area 10000)  2 1) "ha")))
+					    (if (> area1 10000000) (setq textarea (strcat (rtos   (/ area 10000) 2 0) "ha")))
+                                            (if (> area1 100000000) (setq textarea (strcat (rtos (/ area 1000000)  2 1) "km²")))
+                                            (if (> area1 1000000000) (setq textarea (strcat (rtos  (/ area 1000000) 2 0) "km²")))
+     ));if ard
+
+     )
+    )
+    ));if there is an area
+  (setvar "dimzin" 8)
+
+
+  
+  
+   (if (/= area "")(setq areas (strcat " area=\"" area "\""))(setq areas ""))
+
+
+
+  
     (setq lotc (trans lotc 1 0));convert to world if using UCS
-  (SETQ LTINFO (STRCAT "desc=\"" lotno "\" class=\"Road\" state=\"" lotstate "\" parcelType=\"Single\" parcelFormat=\"Standard\">!"
+  (SETQ LTINFO (STRCAT "desc=\"" lotno "\" class=\"Road\" state=\"" lotstate "\" parcelType=\"Single\" parcelFormat=\"Standard\"" areas " >!"
 		       (rtos (cadr lotc) 2 6 ) " " (rtos (car lotc) 2 6)))
 (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 LTINFO)))))
   
@@ -6979,14 +7274,19 @@
   (ENTMOD NEWSENTLIST)
 
   (setq THF 2)
-(setq lotc (trans lotc 0 1));convert back to UCS
+
+ (if (= area "") (setq just "MC")(setq just "BC"));if area exists set justification to bottom centre
+
+  (setq lotc (trans lotc 0 1));convert back to UCS
   (SETVAR "CLAYER"  "Drafting" )
 	(SETVAR "CELWEIGHT" 50)				
-  (COMMAND "TEXT" "J" "MC" lotc (* TH THF) "90" lotno)
+  (COMMAND "TEXT" "J" just lotc (* TH THF) "90" lotno)
        (setq roadname (entget (entlast)))
+ 
+  
 (SETVAR "CELWEIGHT" -1)
-   (SETVAR "CLAYER" prevlayer) 
 
+  
 
 (setq lotc (trans lotc 1 0));convert to world if using UCS
     
@@ -7059,6 +7359,20 @@
 		     (assoc 50 roadname)
 		     roadname     ) )
   (ENTMOD roadname)
+
+
+  
+  ;add area if there is one
+  (setq areapos (polar lotc (+ (* 1.5 pi) rrot) (* th 2.5)))
+  
+   (if (/= area "")(COMMAND "TEXT" "J" just areapos (* TH 1.4) (angtos rrot)  textarea ))
+(SETVAR "CELWEIGHT" -1)
+  
+    (SETVAR "CLAYER" prevlayer) 
+
+
+
+  
 (COMMAND "DRAWORDER" SENT "" "BACK")
   )
 
@@ -18302,6 +18616,16 @@
 	    (SETQ XDATAI (NTH 1 XDATAI))
 	    (SETQ XDATAI (CDR (NTH 1 XDATAI)))
 
+	    ;look for & or ² symbol and replace
+
+	     (setq ²pos 0)
+	   (while (/=  (setq ²pos (vl-string-search "²" xdatai &pos )) nil) (setq xdatai (vl-string-subst "&sup2;" "²"  xdatai ²pos)
+										      ²pos (+ ²pos 5)))
+
+	     (setq &pos 0)
+	   (while (/=  (setq &pos (vl-string-search "&" att &pos )) nil) (setq att (vl-string-subst "&amp;" "&"  att &pos)
+										      &pos (+ &pos 4)))
+
     (if (= (substr xdatai 1 4) "desc")(progn
 
 				    ;Check for easement or road lots note an imported road lot will not have "desc" as the first four letters and not need assignment as below
@@ -19043,6 +19367,7 @@
 
   (setq count 0)
   (repeat (length mpolist)
+    
     (write-line (nth count mpolist) outfile)
     (setq count (+ count 1))
     )
