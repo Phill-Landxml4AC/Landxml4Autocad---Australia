@@ -237,10 +237,12 @@
 ;Revision1.15.1 -Fixed bug in header export version
 ;Revision1.15.2 -Fixed semantic error in landxml.dcl and set dcl auditing to 0 (found by Elliot Griffiths)
 ;Revision1.15.3 -Fixed bug with assigning scale factor to lines with field notes (found by Elliot Griffiths)
-;Revisino1.15.4 -Fixed ² not exporting properly for road names
+;Revision1.15.4 -Fixed ² not exporting properly for road names
 ;               -Added area prompt for roads in XCR and XAR
+;Revision1.15.5 -Expanded XRT
+;Revision1.15.6 -Annotation scale 1:1 added for custom templates where it doesn't exist (found by Michael Vincent)
 
-(setq version "1.15.4")
+(setq version "1.15.6")
 
 (REGAPP "LANDXML")
 
@@ -270,7 +272,7 @@
 (IF (= (setq scale (VLAX-LDATA-GET "LXML4AC" "scale" )) nil) (PROGN   (setq scale 200)  (VLAX-LDATA-PUT "LXML4AC" "scale" scale)   )  )
 (IF (= (setq th    (VLAX-LDATA-GET "LXML4AC" "TH" )) nil) (PROGN   (setq TH 0.5)  (VLAX-LDATA-PUT "LXML4AC" "TH" TH)   )  )
 (IF (= (setq ATHR  (VLAX-LDATA-GET "LXML4AC" "ATHR" )) nil) (PROGN   (setq ATHR "Y")  (VLAX-LDATA-PUT "LXML4AC" "ATHR" ATHR)   )  )
-
+(setvar "celtscale" (/ (/ scale 100) 2))
 
 
 
@@ -288,13 +290,23 @@
 (COMMAND "-LINETYPE" "L" "*" "LANDXML" "" )
  (setvar "expert" expertlevel)
 
-
+(defun find-scale  (name)
+  (car (vl-remove-if-not
+         (function (lambda (item) (eq name (cdr (assoc 300 item)))))
+         (mapcar (function (lambda (item) (entget (cdr item))))
+                 (vl-remove-if-not
+                   (function (lambda (item) (= (car item) 350)))
+                   (dictsearch (namedobjdict) "ACAD_SCALELIST"))))))
 
 
 ;(if (= textfontext "ttf") (COMMAND "STYLE" "" "" "0" "" "" "" "" ))
 ;(if (= textfontext "shx") (COMMAND "STYLE" "" "" "0" "" "" "" "" "" ))
 
-      (setvar "cannoscale" "1:1")
+
+ 
+(if (= (find-scale "1:1") nil)(command "-scalelistedit" "a" "1:1" "1:1" "e"))
+  
+ (setvar "cannoscale" "1:1")
 (command "-scalelistedit" "d" "*" "e")
 
       
@@ -21647,19 +21659,131 @@
 
 
 
-
 ;----------------------------------------------------relabel text from xdata----------------------------------------------------
 (DEFUN C:XRT (/)
- (setq prevlayer (getvar "CLAYER"))
-  (SETQ LINES (SSGET  '((0 . "LINE"))))
 
+  (setq rmlines (list))
+(setq curlayer (getvar "CLAYER"))
+  (SETQ LINES (SSGET  '((0 . "LINE,POINT,ARC,LWPOLYLINE,POLYLINE"))))
+
+
+;search for RM connections
+    (SETQ COUNT 0)
+(REPEAT (SSLENGTH LINES)
+
+   (SETQ OBJTYPE  (CDR(ASSOC 0 (ENTGET (SSNAME LINES COUNT)))))
+(SETQ P1 (CDR(ASSOC 10 (ENTGET (SSNAME LINES COUNT)))))
+  (SETQ P2 (CDR(ASSOC 11 (ENTGET (SSNAME LINES COUNT)))))
+  (SETQ EN (CDR(ASSOC -1 (ENTGET (SSNAME LINES COUNT)))))
+  (SETQ LAYER (CDR(ASSOC 8 (ENTGET (SSNAME LINES COUNT)))))
+
+  (if (and (= objtype "LINE") (= layer "RM Connection"))
+    (progn
+
+     
+		     (SETQ XDATAI (ENTGET EN '("LANDXML")))
+	    (IF (= (SETQ XDATAI (ASSOC -3 XDATAI)) NIL) (progn
+	      	     (COMMAND "CHANGE" en "" "P" "C" "6" "")
+	      (princ (strcat "\nERROR Selected Line has no XML data at " (rtos (car p1) 2 3) "," (rtos (cadr p1)2 3)))
+	     ))
+	    (SETQ XDATAI (NTH 1 XDATAI))
+	    (SETQ XDATAI (CDR (NTH 1 XDATAI)))
+
+
+      (setq stringpos (vl-string-search "azimuth" xdatai ))
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 9)))
+            (setq bearing (substr xdatai (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8))))
+	    (setq xbearing bearing)
+
+	    (setq stringpos (vl-string-search "horizDistance" xdatai ))
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 15)))
+            (setq dist (substr xdatai (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14))))
+
+    (if (/= (setq stringpos (vl-string-search "distanceType=" xdatai ))nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 14)))
+            (setq distancetype (strcat " distanceType=\"" (substr xdatai (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))) "\" ")))(setq distancetype ""))
+
+	    (if (/= (setq stringpos (vl-string-search "azimuthType=" xdatai ))nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 13)))
+            (setq azimuthtype (strcat " azimuthType=\"" (substr xdatai (+ stringpos 14) (-(- wwpos 1)(+ stringpos 12))) "\" ")))(setq azimuthtype ""))
+	  	    
+
+	    (if (/= (setq stringpos (vl-string-search "<FieldNote>" xdatai )) nil)(progn
+											   
+(if (setq wwpos (vl-string-position 34 xdatai (+ stringpos 12)))
+  (progn;if field not contains ""s
+    (setq comment (substr xdatai (+ stringpos 13) (-(- wwpos 1)(+ stringpos 11))))
+    )
+  (progn; else use the < to get other end of field note
+    (setq <pos (vl-string-position 60 xdatai (+ stringpos 11)))
+    (setq comment (substr xdatai (+ stringpos 12) (-(- <pos 1)(+ stringpos 10))))
+    )
+  )
+)
+  (setq comment ""))
+
+  (if (/= (vl-string-position 46 bearing 0) nil ) (PROGN
+  (setq dotpt1 (vl-string-position 46 bearing 0))
+  (setq deg  (substr bearing 1  dotpt1 ))
+  (SETQ mins   (substr bearing (+ dotpt1 2) 2) )
+  (if (= (strlen mins) 1)(setq mins (strcat  mins "0")));fix problem with truncating zeros on minutes and seconds
+  (setq mins (strcat mins "'"))
+  (setq sec  (substr bearing (+ dotpt1 4) 10))
+  (if (= (strlen sec) 1) (setq sec (strcat sec "0")))
+
+  
+  (if (> (strlen sec) 2) (setq sec (strcat (substr sec 1 2) "." (substr sec 3 10))))
+  (if (= (strlen sec) 0) (setq sec "") (setq sec (strcat sec (chr 34))))
+  
+  );P
+	(progn
+	  (setq deg bearing)
+	  (setq mins "")
+	  (setq sec "")
+	  );p else
+  
+  );IF
+
+      
+(setq bearing (strcat  deg "d" mins sec))
+    ;(setq lbearing bearing)
+	    (setq dist (rtos (atof dist)2 3));remove trailing zeros
+	    
+  (setq ldist (strcat dist ))
+      
+  (setq p1s (strcat (rtos (car p1) 2 6) "," (rtos (cadr p1) 2 6)))
+      (setq rmlines (append rmlines (list p1s) (list bearing)(list dist)(list p2)(list comment)))
+      ))
+  (setq count (+ count 1))
+  )
+
+
+    
+
+
+
+  
   (SETQ COUNT 0)
 (REPEAT (SSLENGTH LINES)
+  (SETQ OBJTYPE  (CDR(ASSOC 0 (ENTGET (SSNAME LINES COUNT)))))
 (SETQ P1 (CDR(ASSOC 10 (ENTGET (SSNAME LINES COUNT)))))
+  (SETQ EN (CDR(ASSOC -1 (ENTGET (SSNAME LINES COUNT)))))
+  (SETQ LAYER (CDR(ASSOC 8 (ENTGET (SSNAME LINES COUNT)))))
+(setvar "CLAYER" (CDR(ASSOC 8 (ENTGET (SSNAME LINES COUNT)))))
+
+
+  
+  
+;LINE WITH BEARING AND DISTANCE
+  (IF (AND (= OBJTYPE "LINE") (/= (SUBSTR LAYER 1 10)  "Occupation")(/= layer "RM Connection"))
+    (PROGN
   (SETQ P1 (LIST (CAR P1) (CADR P1)));2DISE P1 TO GIVE 2D DISTANCE
   (SETQ P2 (CDR(ASSOC 11 (ENTGET (SSNAME LINES COUNT)))))
-  (SETQ LAYER (CDR(ASSOC 8 (ENTGET (SSNAME LINES COUNT)))))
-(SETVAR "CLAYER" LAYER)
+  
+
+    (setq p1 (trans p1 0 1))
+  (setq p2 (trans p2 0 1))
+
   (SETQ EN (CDR(ASSOC -1 (ENTGET (SSNAME LINES COUNT)))))
 
 		     (SETQ XDATAI (ENTGET EN '("LANDXML")))
@@ -21679,6 +21803,13 @@
 	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 15)))
             (setq dist (substr xdatai (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14))))
 
+    (if (/= (setq stringpos (vl-string-search "distanceType=" xdatai ))nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 14)))
+            (setq distancetype (strcat " distanceType=\"" (substr xdatai (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))) "\" ")))(setq distancetype ""))
+
+	    (if (/= (setq stringpos (vl-string-search "azimuthType=" xdatai ))nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 13)))
+            (setq azimuthtype (strcat " azimuthType=\"" (substr xdatai (+ stringpos 14) (-(- wwpos 1)(+ stringpos 12))) "\" ")))(setq azimuthtype ""))
 	  	    
 
 	    (if (/= (setq stringpos (vl-string-search "<FieldNote>" xdatai )) nil)(progn
@@ -21724,18 +21855,556 @@
 	    
   (setq ldist (strcat dist ))
 
-  (command "line" (trans p1 0 1) (trans p2 0 1) "")
+  (command "line" p1 p2 "")
   (setq delent (entlast))
 
+  
   (lba)
+
+  (command "erase" delent "")
+
+  ))
+
+  ;MONUMENT
+  (IF (AND (= OBJTYPE "POINT") (= LAYER "Monument"))
+    (PROGN
+
+       (SETQ EN (CDR(ASSOC -1 (ENTGET (SSNAME LINES COUNT)))))
+
+      (setq p1s (strcat (rtos (car p1) 2 6) "," (rtos (cadr p1) 2 6)))
+
+      (setq p1 (trans p1 0 1))
+      
+		     (SETQ XDATAI (ENTGET EN '("LANDXML")))
+	    (IF (= (SETQ XDATAI (ASSOC -3 XDATAI)) NIL) (progn
+	      	     (COMMAND "CHANGE" en "" "P" "C" "6" "")
+	      (princ (strcat "\nERROR Selected Monument has no XML data at " (rtos (car p1) 2 3) "," (rtos (cadr p1)2 3)))
+	     ))
+	    (SETQ XDATAI (NTH 1 XDATAI))
+	    (SETQ XDATAI (CDR (NTH 1 XDATAI)))
+
+      
+ (if (/= (setq stringpos (vl-string-search "type" xdatai )) nil)(progn
+(setq stringpos (vl-string-search "type" xdatai ))(setq wwpos (vl-string-position 34 xdatai (+ stringpos 6)))(setq rmtype (substr xdatai (+ stringpos 7) (-(- wwpos 1)(+ stringpos 5)))))(setq rmtype ""))
+ (if (/= (setq stringpos (vl-string-search "state" xdatai )) nil)(progn
+(setq wwpos (vl-string-position 34 xdatai (+ stringpos 7)))(setq rmstate (substr xdatai (+ stringpos 8) (-(- wwpos 1)(+ stringpos 6)))))(setq rmstate ""))
+(if (/= (setq stringpos (vl-string-search "condition" xdatai )) nil)(progn
+(setq wwpos (vl-string-position 34 xdatai (+ stringpos 11)))(setq rmcondition (substr xdatai (+ stringpos 12) (-(- wwpos 1)(+ stringpos 10)))))(setq rmcondition ""))
+(if (/= (setq stringpos (vl-string-search "desc" xdatai )) nil)(progn
+(setq wwpos (vl-string-position 34 xdatai (+ stringpos 6)))(setq rmcomment (substr xdatai (+ stringpos 7) (-(- wwpos 1)(+ stringpos 5)))))(setq rmcomment ""))
+(setq &pos 0)
+	     (if (/= (setq stringpos (vl-string-search "originSurvey" xdatai )) nil)(progn
+(setq wwpos (vl-string-position 34 xdatai (+ stringpos 14)))(setq rmrefdp (substr xdatai (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13)))))(setq rmrefdp ""))
+
+
+      (if (setq remlist (member p1s rmlines))
+	(progn;if it is a rm
+
+	  (setq p2 (trans (nth 3 remlist) 0 1))
+	  (setq ldist (nth 2 remlist))
+	  (setq bearing (nth 1 remlist))
+
+	  (command "line" p1 p2 "")
+  (setq delent (entlast))
+
+  
+  (lrm)
+
+  (command "erase" delent "")
+
+
+	  );p
+	(progn ;if its a corner mark
+	  (setq rmornot "")
+(lcm)
+));if a rm line
+
+      
+))
+
+
 
   
 
-  (command "erase" delent "")
+
+
+
+  
+;DATUM POINTS
+   (IF (AND (= OBJTYPE "POINT") (= LAYER "Datum Points"))
+    (PROGN
+
+       (SETQ EN (CDR(ASSOC -1 (ENTGET (SSNAME LINES COUNT)))))
+      (setq dppos (TRANS p1 0 1))
+      (SETQ height (caddr dppos))
+
+      (SETQ TEXTPOS (LIST (- (CAR dpPOS) TH) (+ (CADR dpPOS) (* 0.5 TH))))
+      (setq height (caddr dppos))
+
+		     (SETQ XDATAI (ENTGET EN '("LANDXML")))
+	    (IF (= (SETQ XDATAI (ASSOC -3 XDATAI)) NIL) (progn
+	      	     (COMMAND "CHANGE" en "" "P" "C" "6" "")
+	      (princ (strcat "\nERROR Selected Datum Point has no XML data at " (rtos (car p1) 2 3) "," (rtos (cadr p1)2 3)))
+	     ))
+	    (SETQ XDATAI (NTH 1 XDATAI))
+	    (SETQ XDATAI (CDR (NTH 1 XDATAI)))
+      
+(setq ab xdatai)
+
+      
+	 (SETVAR "CLAYER"  "Drafting" )
+      (if (/= height 0)
+  		 (progn;stratum datum point
+			 (COMMAND "TEXT" "J" "BR"  TEXTPOS (* TH 1.4) "90"  ab )
+			 (COMMAND "TEXT" "J" "BL"  dppos (* TH 1) "45" (rtos  height 2 3))
+			 );P
+	       (COMMAND "TEXT" "J" "BR"  TEXTPOS (* TH 2) "90"  (STRCAT "'" ab "'") );normal datum point
+		       );IF SPCPOS2 NIL
+  
+  (setvar "clayer" prevlayer)
+  
+  ))      
+      
+
+
+  ;PM'S
+  (IF (AND (= OBJTYPE "POINT") (= LAYER "PM"))
+    (PROGN
+
+       (SETQ EN (CDR(ASSOC -1 (ENTGET (SSNAME LINES COUNT)))))
+      (setq pmpos (TRANS p1 0 1))
+      
+
+      (SETQ TEXTPOS (LIST (- (CAR pmPOS) TH) (+ (CADR pmPOS) (* 0.5 TH))))
+      (setq height (caddr pmpos))
+
+		     (SETQ XDATAI (ENTGET EN '("LANDXML")))
+	    (IF (= (SETQ XDATAI (ASSOC -3 XDATAI)) NIL) (progn
+	      	     (COMMAND "CHANGE" en "" "P" "C" "6" "")
+	      (princ (strcat "\nERROR Selected PM has no XML data at " (rtos (car p1) 2 3) "," (rtos (cadr p1)2 3)))
+	     ))
+	    (SETQ XDATAI (NTH 1 XDATAI))
+	    (SETQ XDATAI (CDR (NTH 1 XDATAI)))
+
+      (setq ,pos1 (vl-string-position 44 xdatai 0))
+				     (setq pmnum (substr xdatai 1 ,pos1 ))
+
+             (if (/= (setq !pos1 (vl-string-position 33 xdatai 0)) nil)(progn
+                      (setq pmstate (substr xdatai (+ !pos1 2) 200))
+                      (setq xdatai  (substr xdatai 1 !pos1))
+		      )
+      (setq pmstate "Found")
+      )
+
+      (if (setq stringpos (vl-string-search "horizontalFix=" xdatai ))(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 15)))
+            (setq pmsource (substr xdatai (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14)))))(setq pmsource nil))
+
+      
+
+
+      
+
+      
+   
+	 (SETVAR "CLAYER"  "Drafting" )
+  
+ (IF (= (SUBSTR PMNUM 1 3) "PCM")
+     (COMMAND "._INSERT" "VPCM" "_S" TH pmpos "0");DRAW PCM BLOCK
+     (COMMAND "._INSERT" "PM" "_S" TH pmpos "0");ELSE PM BLOCK
+     )
+  
+  (SETQ RMB (ENTLAST))
+  (SETQ ENTSS (SSADD))
+  (SSADD RMB ENTSS)
+(COMMAND "DRAWORDER" ENTSS "" "FRONT")
+
+  (IF (= (SUBSTR PMNUM 1 3) "PCM")
+    (PROGN ;IF PCM
+      (SETQ AANG (/ pi 2))
+(SETQ 3POS (POLAR PMPOS (- AANG (* 0.5 PI)) (* TH 3)))
+      (COMMAND "TEXT" "J" "BL"  3POS  TH  "45" PMNUM)
+      )
+    (PROGN ;ELSE PM
+      
+
+(SETQ TEXTPOS (LIST (+ (CAR PMPOS) TH) (+ (CADR PMPOS) (* 0.5 TH))))
+ 
+ (IF (= pmstate "Found")  (SETQ PMNUMS (STRCAT PMNUM " FD")))
+  (IF (= pmstate "Placed")  (SETQ PMNUMS (STRCAT PMNUM " PL")))
+		 (COMMAND "TEXT" "J" "BL"  TEXTPOS (* TH 1.4) "90" PMNUMS)
+  (SETQ TEXTPOS (LIST (+ (CAR PMPOS) TH) (+ (CADR PMPOS) (* -1.25 TH))))
+  (IF (and (/= pmclass "U") (or (= pmsource "SCIMS" )(= pmsource "From SCIMS")))(COMMAND "TEXT" "J" "BL"  TEXTPOS (* TH 1.4) "90" "(EST)"))
+  ))
+
+      
+  ))      
+
+
+  
+  
+
+  
+;ARC
+ (IF (AND (= OBJTYPE "ARC") (/= (SUBSTR LAYER 1 10)  "Occupation"))
+    (PROGN
+
+       (SETQ EN (CDR(ASSOC -1 (ENTGET (SSNAME LINES COUNT)))))
+
+      (SETQ CP (CDR(ASSOC 10 (ENTGET (SSNAME LINES COUNT)))))
+  (SETQ RADIUS (CDR(ASSOC 40 (ENTGET (SSNAME LINES COUNT)))))
+  (SETQ EN (CDR(ASSOC -1 (ENTGET (SSNAME LINES COUNT)))))
+  (SETQ LAYER (CDR(ASSOC 8 (ENTGET (SSNAME LINES COUNT)))))
+
+  (SETQ ANG1 (CDR(ASSOC 50 (ENTGET (SSNAME LINES COUNT)))))
+  (SETQ ANG2 (CDR(ASSOC 51 (ENTGET (SSNAME LINES COUNT)))))
+
+  (SETQ P1 (POLAR CP ANG1 RADIUS))
+  (SETQ P2 (POLAR CP ANG2 RADIUS))
+  (SETQ ANG (ANGLE P1 P2))
+
+		     (SETQ XDATAI (ENTGET EN '("LANDXML")))
+	    (IF (= (SETQ XDATAI (ASSOC -3 XDATAI)) NIL) (progn
+	      	     (COMMAND "CHANGE" en "" "P" "C" "6" "")
+	      (princ (strcat "\nERROR Selected Line has no XML data at " (rtos (car p1) 2 3) "," (rtos (cadr p1)2 3)))
+	     ))
+	    (SETQ XDATAI (NTH 1 XDATAI))
+	    (SETQ XDATAI (CDR (NTH 1 XDATAI)))
+
+
+	  	  
+	    (setq stringpos (vl-string-search "chordAzimuth" XDATAI ))
+	    (setq wwpos (vl-string-position 34 XDATAI (+ stringpos 14)))
+            (setq bearing (substr XDATAI (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))))
+	    (setq xbearing bearing)
+
+	    (setq stringpos (vl-string-search "length" XDATAI ))
+	    (setq wwpos (vl-string-position 34 XDATAI (+ stringpos 8)))
+            (setq arclength (substr XDATAI (+ stringpos 9) (-(- wwpos 1)(+ stringpos 7))))
+	    (setq arclength (rtos (atof arclength)2 3));remove trailing zeros
+
+	    (setq stringpos (vl-string-search "radius" XDATAI ))
+	    (setq wwpos (vl-string-position 34 XDATAI (+ stringpos 8)))
+            (setq radius (substr XDATAI (+ stringpos 9) (-(- wwpos 1)(+ stringpos 7))))
+	    
+
+	    (setq stringpos (vl-string-search "rot" XDATAI ))
+	    (setq wwpos (vl-string-position 34 XDATAI (+ stringpos 5)))
+            (setq curverot (substr XDATAI (+ stringpos 6) (-(- wwpos 1)(+ stringpos 4))))
+
+      (if (/= (setq stringpos (vl-string-search "distanceType=" xdatai ))nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 14)))
+            (setq distancetype (strcat " distanceType=\"" (substr xdatai (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))) "\" ")))(setq distancetype ""))
+
+	    (if (/= (setq stringpos (vl-string-search "azimuthType=" xdatai ))nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 13)))
+            (setq azimuthtype (strcat " azimuthType=\"" (substr xdatai (+ stringpos 14) (-(- wwpos 1)(+ stringpos 12))) "\" ")))(setq azimuthtype ""))
+
+	    
+	    (if (/= (setq stringpos (vl-string-search "arcType" XDATAI )) nil)(progn
+	    (setq wwpos (vl-string-position 34 XDATAI (+ stringpos 9)))
+            (setq arcType (strcat " arcType=\"" (substr XDATAI (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8))) "\"")))(setq arcType ""))
+
+	    (if (setq stringpos (vl-string-search "angleAccClass" XDATAI ))(progn
+	    (setq wwpos (vl-string-position 34 XDATAI (+ stringpos 15)))
+            (setq sdb (substr XDATAI (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14)))))(setq sdb ""))
+
+	    (if (setq stringpos (vl-string-search "distanceAccClass" XDATAI ))(progn
+	    (setq wwpos (vl-string-position 34 XDATAI (+ stringpos 18)))
+            (setq sdd (substr XDATAI (+ stringpos 19) (-(- wwpos 1)(+ stringpos 17)))))(setq sdd ""))
+		  
+
+	       (if (/= (setq stringpos (vl-string-search "<FieldNote>" XDATAI )) nil)(progn
+											   
+(if (setq wwpos (vl-string-position 34 XDATAI (+ stringpos 12)))
+  (progn;if field not contains ""s
+    (setq comment (substr XDATAI (+ stringpos 13) (-(- wwpos 1)(+ stringpos 11))))
+    )
+  (progn; else use the < to get other end of field note
+    (setq <pos (vl-string-position 60 XDATAI (+ stringpos 11)))
+    (setq comment (substr XDATAI (+ stringpos 12) (-(- <pos 1)(+ stringpos 10))))
+    )
+  )
+)
+  (setq comment ""))
+	    (setq &pos 0)
+	      (while (/=  (setq &pos (vl-string-search "&amp;" comment &pos )) nil) (setq comment (vl-string-subst "&" "&amp;"  comment &pos)
+										      &pos (+ &pos 1)))
+
+
+      (if (= curverot "cw")(setq p1p p1
+				 p1 p2
+				 p2 p1p))
+	
+
+
+	    (setq digchaz (angle p1 p2))
+
+;calc arc internal angle
+	      (SETQ MAST (SQRT (- (* (atof RADIUS) (atof RADIUS)) (* (/ (distance p1 p2) 2)(/ (distance p1 p2) 2 )))))
+  (SETQ O (* 2 (ATAN (/ (/ (distance p1 p2) 2) MAST))))
+	    (setq remhalfO  (- (* 0.5 pi) (/ O 2)))
+	    ;calc bearing from p1 to arc centre (watching for bulbous arcs)
+	    (if (and (= curverot "ccw") (<= (atof arclength) (* pi (atof radius))))(setq raybearing (+  digchaz  remhalfO)))
+	    (IF (and (= curverot "cw") (<= (atof arclength) (* pi (atof radius))))(setq raybearing (-  digchaz  remhalfO)))
+	    (IF (and (= curverot "ccw") (> (atof arclength) (* pi (atof radius))))(setq raybearing (-  digchaz  remhalfO)))
+	    (if (and (= curverot "cw") (> (atof arclength) (* pi (atof radius))))(setq raybearing (+  digchaz  remhalfO)))
+
+	    
+	      ;CONVERT TO ANTI CLOCKWISE AND EAST ANGLE
+  ;(SETQ raybearing (+ (* -1 raybearing) (* 0.5 PI)))
+
+	       ;calc curve centre point
+	    (setq curvecen (polar p1 raybearing (atof radius)))
+	    (setq curvecenc (strcat (rtos (car curvecen) 2 9) "," (rtos (cadr curvecen) 2 9)))
+
+	    ;calc curve midpoint
+  (setq a1 (angle curvecen p1))
+  (setq a2 (angle curvecen p2))
+  (if (= curverot "ccw")(setq da (- a2 a1))(setq da (- a1 a2)))
+  (if (< da 0)(setq da (+ da (* 2 pi))))
+    (SETQ DA (/ DA 2))
+    (IF (= CURVEROT "ccw")(setq midb (+ a1 da))(setq midb (+ a2 da)))
+  (setq amp (polar curvecen midb (atof radius)))
+	    
+	    
+  					   
+;calc chord distance, note using string values not digital values
+	    (setq stringO (/ (atof arclength) (atof radius)));arc internal angle based on string values
+	    (setq dist (rtos (* 2 (atof radius) (sin (/ stringO 2))) 2 3))
+
+       (if (= qround "YES")(progn 
+	(SETQ LLEN (atof dist))
+
+  (IF (< LLEN DISTMAX1) (SETQ DROUND DRND1))
+    (IF (AND (> LLEN DISTMAX1)(< LLEN DISTMAX2)) (SETQ DROUND DRND2))
+    (IF (> LLEN DISTMAX2)(SETQ DROUND DRND3))
+			
+    (SETQ LIP (FIX (/ LLEN DROUND)))
+    (SETQ LFP (- (/ LLEN DROUND) LIP))
+    (IF (>= LFP 0.5 ) (SETQ LIP (+ LIP 1)))
+    (SETQ LLEN (* LIP DROUND))
+    
+    (SETQ dist (RTOS LLEN 2 3))
+    ;(IF (< LLEN 1) (SETQ DTS (STRCAT "0" DTS)))
+
+	))
+
+	       ;APPLY ALL CORRECTIONS AND EXTRACT INFORMATION FROM USER INPUT
+(if (/= (vl-string-position 46 bearing 0) nil ) (PROGN
+   (setq dotpt1 (vl-string-position 46 bearing 0))
+  (setq deg  (substr bearing 1  dotpt1 ))
+  (SETQ mins   (substr bearing (+ dotpt1 2) 2) )
+  (if (= (strlen mins) 1)(setq mins (strcat  mins "0")));fix problem with truncating zeros on minutes and seconds
+  (setq mins (strcat mins "'"))
+  (setq sec  (substr bearing (+ dotpt1 4) 10))
+  (if (= (strlen sec) 1) (setq sec (strcat sec "0")))
+
+ 
+
+  
+  (if (> (strlen sec) 2) (setq sec (strcat (substr sec 1 2) "." (substr sec 3 10))))
+  (if (= (strlen sec) 0) (setq sec "") (setq sec (strcat sec (chr 34))))
+
+  );P
+	(progn
+	  (setq deg bearing)
+	  (setq mins "")
+	  (setq sec "")
+	  );p else
+  
+  );IF
+
+      
+(setq bearing (strcat  deg "d" mins sec))
+    ;(setq lbearing bearing)'
+	     (setq dist (rtos (atof dist)2 3));remove trailing zeros
+  (setq ldist dist )
+	    (setq radius (rtos (atof radius)2 3));remove trailing zeros
+    (setq lradius radius)
+
+
+
+
+	        ;if nothing at either end of line
+	   ;(if (= (or (member setupid pmlist)(member targetid pmlist)(member targetid rmlist)(member setupid rmlist)) nil)(progn
+
+      (SETVAR "CLAYER" layer )
+      
+(setq tp1 p1)
+(setq tp2 p2)
+      
+  (lbarc);label line if not already labelled;label arc using function
+
+    ))
+
+
+
+
+  ;---------------------Occupations----------------------
+
+  
+    (if (= (SUBSTR LAYER 1 10) "Occupation")
+      (PROGN
+
+ (SETQ XDATAI (ENTGET EN '("LANDXML")))
+	    (IF (/= (SETQ XDATAI (ASSOC -3 XDATAI)) NIL)
+
+	      (progn
+	      	    
+	    (SETQ XDATAI (NTH 1 XDATAI))
+	    (SETQ XDATAI (CDR (NTH 1 XDATAI)))
+ 
+	(setq irbd xdatai)
+
+	(if (= OBJTYPE "LWPOLYLINE")
+	  (PROGN
+
+			       ;if occupations layer append description in front of chainage list
+			       (if (= (cdr (assoc 8 (ENTGET EN))) "Occupations")
+				 (progn
+				     (SETQ XDATAI (ENTGET EN '("LANDXML")))
+	   (IF (= (SETQ XDATAI (ASSOC -3 XDATAI)) NIL) (progn
+	      	     
+	      (princ (strcat "\nChainage object has no chainages"))
+	     ))
+	    (SETQ XDATAI (NTH 1 XDATAI))
+	    (SETQ XDATAI (CDR (NTH 1 XDATAI)))
+				   (if (/= (substr xdatai 1 2) "00");if description already exists
+				     (progn
+				     (setq ,pos1 (vl-string-position 44 xdatai 0))
+				     (setq xdatai (substr xdatai 1 ,pos1 ))
+				     ))
+
+				   (setq irbd xdatai)
+				   
+				   ));if occupaton
+				   
+  
+  (SETQ PTLIST (LIST))
+	    (setq sentlist (entget en))
+	    
+	    (foreach a sentlist
+	      (if (= 10 (car a))
+
+		(setq PTLIST (append PTLIST (list (cdr a))))
+	      )				;IF
+	      
+	    )				;FOREACH 			
+)
+    );IF LWPOLYLINE
+
+  (if (= OBJTYPE "POLYLINE")(PROGN
+
+  (setq enlist (entget en))
+	    (setq ptList (list));EMPTY LIST
+	    (setq en2 (entnext en))
+	    (setq enlist2 (entget en2))
+               
+	     (while
+	      (not
+		(equal (cdr (assoc 0 (entget (entnext en2)))) "SEQEND")
+	      )
+	      	(if (= (cdr(assoc 70 enlist2)) 16)(progn
+	       	 (setq ptList (append ptList (list (cdr (assoc 10 enlist2)))))
+		))
+		 	       
+	       (setq en2 (entnext en2))
+	       (setq enlist2 (entget en2))
+	       );W
+   (setq ptList
+			(append ptList (list (cdr (assoc 10 enlist2))))
+		 
+	       )
+  ));IF 2D POLYLINE
+
+   (if (= OBJTYPE "LINE")(PROGN
+
+  (setq PTLIST (LIST (cdr (assoc 10 (ENTGET EN)))))
+  (SETQ PTLIST (append ptList (list (cdr (assoc 11 (ENTGET EN))))))
+		 
+	       
+  ));IF LINE
+
+  (if (= OBJTYPE "ARC")(PROGN
+			 
+(SETQ CP (CDR (assoc 10 (ENTGET EN))))
+  (SETQ RADIUS (CDR (assoc 40 (ENTGET EN))))
+  (SETQ ANG1 (CDR (assoc 50 (ENTGET EN))))
+  (SETQ ANG2 (CDR (assoc 51 (ENTGET EN))))
+  (SETQ P1 (POLAR CP ANG1 RADIUS))
+  (SETQ P2 (POLAR CP ANG2 RADIUS))
+(SETQ PTLIST (LIST P1))
+(SETQ PTLIST (APPEND PTLIST (LIST P2)))
+));IF ARC
+  
+	(if (and (= objtype "LINE")(= layer "Occupations"))
+        (progn;if occ line
+
+	  
+	   (if (/= (setq stringpos (vl-string-search "desc" xdatai )) nil)(progn
+(setq stringpos (vl-string-search "desc" xdatai ))(setq wwpos (vl-string-position 34 xdatai (+ stringpos 6)))(setq offs (substr xdatai (+ stringpos 7) (-(- wwpos 1)(+ stringpos 5)))))(setq offs ""))
+
+	  (setq occpnt (trans (cdr (assoc 10 (ENTGET EN))) 0 1))
+	  (setq p5  (trans (cdr (assoc 11 (ENTGET EN))) 0 1))
+	  (setq off (distance occpnt p5))
+	  (setq mp (list (/ (+ (car occpnt)(car p5)) 2)(/ (+ (cadr occpnt)(cadr p5)) 2)))
+	  
+	  (setq ang (angle occpnt p5 ))
+	  
+	  (if (and (> ang  (* 0.5 pi))(< ang (* 1.5 pi)))(setq ang (- ang pi)))
+  (if (< ang 0)(setq ang (+ ang (* 2 pi))))
+
+  
+
+	  (if (> off (* th 5))(setq tpos mp
+			    just "BC"))
+
+					  (if (and (< off (* th 7))(>= (angle occpnt p5) (* 0.5 pi))(<= (angle occpnt p5)(* 1.5 pi)))(setq tpos p5
+																	 just "BR"))
+					  (if (and (< off (* th 7))(or(<= (angle occpnt p5) (* 0.5 pi))(>= (angle occpnt p5)(* 1.5 pi))))(setq tpos p5
+																	 just "BL"))
+	(setvar "clayer" "Drafting")
+	(COMMAND "TEXT" "J" JUST TPOS TH (ANGTOS ANG 1 4) offs)
+
+
+	  )
+
+
+	  (progn;anything but an occ line
+  
+		 (setq mp1 (TRANS (nth (- (/ (length ptlist) 2)1) ptlist) 0 1))
+		 (setq mp2 (TRANS (nth  (/ (length ptlist) 2) ptlist) 0 1))
+		 (setq mp (list (/ (+ (car mp1)(car mP2)) 2) (/ (+ (cadr mp1)(cadr mp2)) 2)))
+		 (setq mprot (angle mp1 mp2))
+		 (setq mprot90 (+ mprot (* 0.5 pi)))
+  		 (SETQ 1POS (POLAR mp mprot90 (* TH 2.5)))
+                 (IF (AND (> mprot  (* 0.5 pi)) (< mprot (* 1.5 pi)))(setq mprot (+ mprot pi))) ;if text is upsidedown reverse rotation
+                 (setvar "clayer" "Drafting")
+  		 (COMMAND "TEXT" "J" "MC" 1pos TH (ANGTOS mprot 1 4) irbd)
+		 (setvar "clayer" prevlayer)
+	    );if not in occupations layer
+
+	  )
+
+	    )
+	    (progn
+	     
+	      (princ (strcat "\nOccupation has no xdata" (rtos (car p1) 2 3) "," (rtos (cadr p1)2 3)))
+	     ))
+
+	));P&IF START OF LAYER IS OCCUPATION
+  
+
+
+
+
+
+  
   
 (setq count (+ count 1))
   );r
-  (SETVAR "CLAYER"  prevlayer )
+  (SETVAR "CLAYER"  curlayer )
   );defun
 
 
