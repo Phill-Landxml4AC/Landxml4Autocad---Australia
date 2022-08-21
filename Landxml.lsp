@@ -241,8 +241,10 @@
 ;               -Added area prompt for roads in XCR and XAR
 ;Revision1.15.5 -Expanded XRT
 ;Revision1.15.6 -Annotation scale 1:1 added for custom templates where it doesn't exist (found by Michael Vincent)
+;Revision1.16   -Added XALG, XALNG, XAAG, XAANG and XGV for GNSS observations and updated xin to create GNSS schedule (requested by Michael Vincent)
+;               -Fixed problem with areas on XIN
 
-(setq version "1.15.6")
+(setq version "1.16")
 
 (REGAPP "LANDXML")
 
@@ -4804,6 +4806,282 @@
   )
 
 
+
+
+
+;----------------------------------------------------------------CREATE GNSS VALIDATION SCHEDULE--------------------------------------------
+
+(defun C:XGV (/)
+   (setq prevlayer (getvar "CLAYER"))
+
+   (setq pmlist (list))
+   (princ "\nGathering PM points")
+(IF (/= (setq bdyline (ssget "_X" '((0 . "POINT") (8 . "PM")))) nil)(progn 
+  (setq count 0)
+  (repeat (sslength bdyline)
+
+
+(SETQ P1 (CDR(ASSOC 10 (ENTGET (SSNAME bdyline COUNT)))))
+  (SETQ EN (CDR(ASSOC -1 (ENTGET (SSNAME bdyline COUNT)))))
+    (SETQ ZA (CDR (ASSOC 210 (ENTGET (SSNAME bdyline COUNT)))))
+    (SETQ P1 (TRANS P1 ZA 0))
+    (setq PMlist (append pmlist (list (strcat (rtos (car p1) 2 6) " " (rtos (cadr p1) 2 6)))))
+
+    (SETQ XDATAI (ENTGET EN '("LANDXML")))
+	    (IF (= (SETQ XDATAI (ASSOC -3 XDATAI)) NIL) (progn
+	      	     (COMMAND "CHANGE" en "" "P" "C" "6" "")
+	      (princ (strcat "\nPM Connection Line with no XML data at " (rtos (car p1) 2 3) "," (rtos (cadr p1)2 3)))
+	     ))
+	    (SETQ XDATAI (NTH 1 XDATAI))
+	    (SETQ XDATAI (CDR (NTH 1 XDATAI)))
+
+    ;cut pm number from xdata
+      (setq ,pos1 (vl-string-position 44 xdatai 0))
+    (setq pmnum  (substr xdatai 1 ,pos1 ))
+
+    (setq PMlist (append pmlist (list pmnum)))
+      
+    (setq count (+ count 1))
+    )
+  ));if PM points exist
+
+  
+
+  (PRINC "\nSelect GNSS and EDM Traversed line:")
+  (setq lines (SSGET  '((0 . "LINE") (8 . "PM Connection"))))
+
+  (setq count 0)
+  (repeat (sslength lines)
+  
+ (SETQ EN (CDR(ASSOC -1 (ENTGET (SSNAME lines COUNT)))))
+    (SETQ p1 (CDR(ASSOC 10 (ENTGET (SSNAME lines COUNT)))))
+    (setq p2 (CDR(ASSOC 11 (ENTGET (SSNAME lines COUNT)))))
+
+    (setq pm1 (cadr (member (strcat (rtos (car p1) 2 6) " " (rtos (cadr p1) 2 6)) pmlist)))
+    (setq pm2 (cadr (member (strcat (rtos (car p2) 2 6) " " (rtos (cadr p2) 2 6)) pmlist)))
+
+    (if (or (= pm1 nil)(= pm2 nil))(princ "\nError - lines do not terminate at PM's"))
+
+    	    (SETQ XDATAI (ENTGET EN '("LANDXML")))
+	    (IF (= (SETQ XDATAI (ASSOC -3 XDATAI)) NIL) (progn
+	      	     (COMMAND "CHANGE" en "" "P" "C" "6" "")
+	      (princ (strcat "\nPM Connection Line with no XML data at " (rtos (car p1) 2 3) "," (rtos (cadr p1)2 3)))
+	     ))
+	    (SETQ XDATAI (NTH 1 XDATAI))
+	    (SETQ XDATAI (CDR (NTH 1 XDATAI)))
+    
+ (if (/= (setq stringpos (vl-string-search "distanceType" xdatai )) nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 14)))
+            (setq dtype (substr xdatai (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))))
+	    )
+   (setq dtype "EDM Traverse"))
+
+	    (if (or (= dtype "AUSPOS")
+		    (= dtype "Static GNSS")
+		    (= dtype "RTK GNSS")
+		    (= dtype "CORS NRTK GNSS")
+		    (= dtype "CORS RTK GNSS")
+		    (= dtype "CORS Static GNSS"))
+	      (progn      		    
+
+	     (if (/= (setq stringpos (vl-string-search "azimuth" xdatai )) nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 9)))
+            (setq gbearing (substr xdatai (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8)))))
+	   (setq gbearing "")
+	       );azimuth may be missing eg compile or strata
+
+	    (if (/= (setq stringpos (vl-string-search "horizDistance" xdatai )) nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 15)))
+            (setq gdist (substr xdatai (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14)))))
+		    (setq gdist "")
+	      );dist may be missing eg trig obs
+	      
+	    );if distancetype is GNSS
+
+	    (progn;else is the EDM traverse measurement
+
+	      (if (/= (setq stringpos (vl-string-search "azimuth" xdatai )) nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 9)))
+            (setq ebearing (substr xdatai (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8)))))
+	   (setq ebearing "")
+	       );azimuth may be missing eg compile or strata
+
+	    (if (/= (setq stringpos (vl-string-search "horizDistance" xdatai )) nil)(progn
+	    (setq wwpos (vl-string-position 34 xdatai (+ stringpos 15)))
+            (setq edist (substr xdatai (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14)))))
+		    (setq edist "")
+	      );dist may be missing eg trig obs
+	      );else EDM trav
+	      );if gnss
+	    
+
+   (setq count (+ count 1))
+
+    );r
+
+;Format gbearing for string output
+  (if (/= (vl-string-position 46 gbearing 0) nil ) (PROGN
+  (setq dotpt1 (vl-string-position 46 gbearing 0))
+  (setq deg  (substr gbearing 1  dotpt1 ))
+  (SETQ mins   (substr gbearing (+ dotpt1 2) 2) )
+  (if (= (strlen mins) 1)(setq mins (strcat  mins "0")));fix problem with truncating zeros on minutes and seconds
+  (setq mins (strcat mins "'"))
+  (setq sec  (substr gbearing (+ dotpt1 4) 10))
+  (if (= (strlen sec) 1) (setq sec (strcat sec "0")))
+
+  
+  (if (> (strlen sec) 2) (setq sec (strcat (substr sec 1 2) "." (substr sec 3 10))))
+  (if (= (strlen sec) 0) (setq sec "") (setq sec (strcat sec (chr 34))))
+  
+  );P
+	(progn
+	  (setq deg gbearing)
+	  (setq mins "")
+	  (setq sec "")
+	  );p else
+  
+  );IF
+
+
+(if (/= gbearing "")(setq gbearing (strcat  deg "°" mins sec)))
+
+  ;Format ebearing for string output
+  (if (/= (vl-string-position 46 ebearing 0) nil ) (PROGN
+  (setq dotpt1 (vl-string-position 46 ebearing 0))
+  (setq deg  (substr ebearing 1  dotpt1 ))
+  (SETQ mins   (substr ebearing (+ dotpt1 2) 2) )
+  (if (= (strlen mins) 1)(setq mins (strcat  mins "0")));fix problem with truncating zeros on minutes and seconds
+  (setq mins (strcat mins "'"))
+  (setq sec  (substr ebearing (+ dotpt1 4) 10))
+  (if (= (strlen sec) 1) (setq sec (strcat sec "0")))
+
+  
+  (if (> (strlen sec) 2) (setq sec (strcat (substr sec 1 2) "." (substr sec 3 10))))
+  (if (= (strlen sec) 0) (setq sec "") (setq sec (strcat sec (chr 34))))
+  
+  );P
+	(progn
+	  (setq deg ebearing)
+	  (setq mins "")
+	  (setq sec "")
+	  );p else
+  
+  );IF
+
+      
+(if (/= ebearing "")(setq ebearing (strcat  deg "°" mins sec)))
+  
+  
+  
+
+  (SETVAR "CLAYER"  "Drafting" )
+  
+  
+
+  (if (= gvboxmark nil)(progn
+				 
+			 (setq gvboxmark (getpoint "\nSelect Point for GNSS Validation box:"))
+			 (setq p10 (list (+ (car gvboxmark) (* 64 th))(+ (cadr gvboxmark) (* -2.5 th))))
+			 (setq p11 (list (+ (car gvboxmark) 0)(+ (cadr gvboxmark) (* -2.5 th))))
+			 (setq p12 (list (+ (car gvboxmark) (* th 32))(+ (cadr gvboxmark) (* -1.25 th))))
+			 (command "rectangle" gvboxmark p10)
+			 (command "text" "j" "mc" p12 th "90" "GNSS VALIDATION SCHEDULE")
+			 (setq gvboxmark p11)
+                         ;box corners
+			 (setq p10 (list (+ (car gvboxmark) 0)(+ (cadr gvboxmark) (* -2.5 th))))
+			 (setq p11 (list (+ (car gvboxmark) (* 12 th))(+ (cadr gvboxmark)  0 )))
+			 (setq p12 (list (+ (car gvboxmark) (* 24 th))(+ (cadr gvboxmark) (* -2.5 th))))
+			 (setq p13 (list (+ (car gvboxmark) (* 36 th))(+ (cadr gvboxmark)  0 )))
+			 (setq p14 (list (+ (car gvboxmark) (* 48 th))(+ (cadr gvboxmark) (* -2.5 th))))
+			 (setq p15 (list (+ (car gvboxmark) (* 64 th))(+ (cadr gvboxmark)  0 )))
+			
+			 
+			 ;draw boxes
+			 (command "rectangle" p10 p11)
+			 (command "rectangle" p11 p12)
+			 (command "rectangle" p12 p13)
+			 (command "rectangle" p13 p14)
+			 (command "rectangle" p14 p15)
+			 
+			 
+			 ;text insertion points
+			 (setq p20 (list (+ (car gvboxmark) (* 6 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p21 (list (+ (car gvboxmark) (* 18 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p22 (list (+ (car gvboxmark) (* 30 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p23 (list (+ (car gvboxmark) (* 42 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p24 (list (+ (car gvboxmark) (* 56 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 
+			 ;create text
+			 (command "text" "j" "mc" p20 th "90" "FROM")
+			 (command "text" "j" "mc" p21 th "90" "TO")
+			 (command "text" "j" "mc" p22 th "90" "GRID BEARING")
+			 (command "text" "j" "mc" p23 th "90" "DISTANCE")
+			 (command "text" "j" "mc" p24 th "90" "METHOD")
+
+			 ;reset pm box mark point
+			 (setq gvboxmark p10)
+			 ));p&if no boxmark
+
+
+  
+  			;box corners
+                       ;box corners
+			 (setq p10 (list (+ (car gvboxmark) 0)(+ (cadr gvboxmark) (* -5 th))))
+			 (setq p11 (list (+ (car gvboxmark) (* 12 th))(+ (cadr gvboxmark)  0 )))
+			 (setq p12 (list (+ (car gvboxmark) (* 24 th))(+ (cadr gvboxmark) (* -5 th))))
+			 (setq p13 (list (+ (car gvboxmark) (* 36 th))(+ (cadr gvboxmark)  (* -2.5 th) )))
+			 (setq p14 (list (+ (car gvboxmark) (* 24 th))(+ (cadr gvboxmark) 0)))
+			 (setq p15 (list (+ (car gvboxmark) (* 48 th))(+ (cadr gvboxmark)  0 )))
+                         (setq p16 (list (+ (car gvboxmark) (* 48 th))(+ (cadr gvboxmark)  (* -5 th))))
+                         (setq p17 (list (+ (car gvboxmark) (* 64 th))(+ (cadr gvboxmark)  (* -2.5 th))))
+  
+  
+			 
+			 ;draw boxes
+			 (command "rectangle" p10 p11)
+			 (command "rectangle" p11 p12)
+			 (command "rectangle" p12 p13)
+			 (command "rectangle" p14 p13)
+			 (command "rectangle" p13 p15)
+			 (command "rectangle" p13 p16)
+			 (command "rectangle" p15 p17)
+			 (command "rectangle" p16 p17)
+                         
+			 
+			 ;text insertion points
+			 (setq p20 (list (+ (car gvboxmark) (* 6 th))(+ (cadr gvboxmark)  (* -2.5 th ))))
+			 (setq p21 (list (+ (car gvboxmark) (* 18 th))(+ (cadr gvboxmark)  (* -2.5 th ))))
+			 (setq p22 (list (+ (car gvboxmark) (* 30 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p23 (list (+ (car gvboxmark) (* 30 th))(+ (cadr gvboxmark)  (* -3.75 th ))))
+			 (setq p24 (list (+ (car gvboxmark) (* 42 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p25 (list (+ (car gvboxmark) (* 42 th))(+ (cadr gvboxmark)  (* -3.75 th ))))
+			 (setq p26 (list (+ (car gvboxmark) (* 56 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p27 (list (+ (car gvboxmark) (* 56 th))(+ (cadr gvboxmark)  (* -3.75 th ))))
+                         
+			 
+			 ;create text
+			 (command "text" "j" "mc" p20 th "90" pm1)
+			 (command "text" "j" "mc" p21 th "90" pm2)
+			 (command "text" "j" "mc" p22 th "90" gbearing)
+			 (command "text" "j" "mc" p23 th "90" ebearing)
+			 (command "text" "j" "mc" p24 th "90" gdist)
+			 (command "text" "j" "mc" p25 th "90" edist)
+			 (command "text" "j" "mc" p26 th "90" gtype)
+			 (command "text" "j" "mc" p27 th "90" "EDM TRAVERSE")
+  		
+  
+			 ;reset pm box mark point
+			 (setq gvboxmark p10)
+
+
+  (setvar "clayer" prevlayer)
+
+  
+  )
+
+
+
+
 ;-------------------------------------------------------------------Add Combined Scale Factor to Line-------------
 
 
@@ -6048,6 +6326,22 @@
   (setq mandist 0)
   (al)
   )
+
+
+(defun C:XALG (/)
+  (setq compile 10)
+  (setq notereq 0)
+  (setq mandist 0)
+  (setq Gtype (getstring "GNSS Type - Auspos[A],Static[S],RTK[R],CORS NRTK[CN],CORS RTK[CR],CORS STATIC[CS]:"))
+  (if (= (strcase gtype) "A")(setq gtype "AUSPOS"))
+  (if (= (strcase gtype) "S")(setq gtype "Static GNSS"))
+  (if (= (strcase gtype) "R")(setq gtype "RTK GNSS"))
+  (if (= (strcase gtype) "CN")(setq gtype "CORS NRTK GNSS"))
+  (if (= (strcase gtype) "CR")(setq gtype "CORS RTK GNSS"))
+  (if (= (strcase gtype) "CS")(setq gtype "CORS Static GNSS"))
+    (al)
+  )
+
 (defun C:XALCN (/)
   (if (/= compile 1) (setq cbrq (getstring "Do you with to show bearings? (y/n):")))
   (if (or (= cbrq "y")(= cbrq "yes")(= cbrq "YES"))(setq cbrq "Y"))
@@ -6055,6 +6349,20 @@
   (setq compile 1)
   (setq notereq 1)
   (setq mandist 0)
+  (al)
+  )
+
+(defun C:XALGN (/)
+  (setq compile 10)
+  (setq notereq 1)
+  (setq mandist 0)
+   (setq Gtype (getstring "GNSS Type - Auspos[A],Static[S],RTK[R],CORS NRTK[CN],CORS RTK[CR],CORS STATIC[CS]:"))
+  (if (= (strcase gtype) "A")(setq gtype "AUSPOS"))
+  (if (= (strcase gtype) "S")(setq gtype "Static GNSS"))
+  (if (= (strcase gtype) "R")(setq gtype "RTK GNSS"))
+  (if (= (strcase gtype) "CN")(setq gtype "CORS NRTK GNSS"))
+  (if (= (strcase gtype) "CR")(setq gtype "CORS RTK GNSS"))
+  (if (= (strcase gtype) "CS")(setq gtype "CORS Static GNSS"))
   (al)
   )
 
@@ -6268,6 +6576,8 @@
   
   (if (= compile 1)(setq distx (strcat "horizDistance=\"" ldist"\" distanceType=\"Compiled\"")))
   (if (= compile 2)(setq distx (strcat "horizDistance=\"" ldist"\" distanceType=\"Measured\"")));strata
+  (if (= compile 10)(setq distx (strcat "horizDistance=\"" ldist"\" distanceType=\""gtype"\"")
+			  azimuthx (strcat "azimuth=\"" lbearing "\" azimuthType=\""gtype"\" ")))
   
   (if (= cbrq "Y")(setq  azimuthx (strcat "azimuth=\"" lbearing "\" azimuthType=\"Compiled\" ")))
   (if (= cbrq "N")(setq  azimuthx ""))
@@ -6281,6 +6591,7 @@
   (COMMAND "ERASE" EN "")
   (SETVAR "CLAYER" layer)
   (COMMAND "LINE" (trans P1 0 1)(trans P2 0 1) "")
+  (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
     
 (SETQ BDINFO (STRCAT azimuthx distx ocomment))
   (SETQ SENT (ENTLAST))
@@ -6290,6 +6601,8 @@
   (ENTMOD NEWSENTLIST)
 
   (if (= cbrq "N")(setq bearing ""))
+
+    (if (= compile 10)(setq comment (strcat comment " " gtype)))
 
   (LBA)
 
@@ -6328,6 +6641,19 @@
   (setq mandist 0)
   (AA)
   )
+(defun C:XAAG (/)
+  (setq compile 10)
+  (setq notereq 0)
+  (setq mandist 0)
+  (setq Gtype (getstring "GNSS Type - Auspos[A],Static[S],RTK[R],CORS NRTK[CN],CORS RTK[CR],CORS STATIC[CS]:"))
+  (if (= (strcase gtype) "A")(setq gtype "AUSPOS"))
+  (if (= (strcase gtype) "S")(setq gtype "Static GNSS"))
+  (if (= (strcase gtype) "R")(setq gtype "RTK GNSS"))
+  (if (= (strcase gtype) "CN")(setq gtype "CORS NRTK GNSS"))
+  (if (= (strcase gtype) "CR")(setq gtype "CORS RTK GNSS"))
+  (if (= (strcase gtype) "CS")(setq gtype "CORS Static GNSS"))
+    (AA)
+  )
 (defun C:XAACN (/)
    (if (/= compile 1) (setq cbrq (getstring "Do you with to show bearings? (y/n):")))
   (if (or (= cbrq "y")(= cbrq "yes")(= cbrq "YES"))(setq cbrq "Y"))
@@ -6335,6 +6661,19 @@
   (setq compile 1)
   (setq notereq 1)
   (setq mandist 0)
+  (AA)
+  )
+(defun C:XAAGN (/)
+  (setq compile 10)
+  (setq notereq 1)
+  (setq mandist 0)
+   (setq Gtype (getstring "GNSS Type - Auspos[A],Static[S],RTK[R],CORS NRTK[CN],CORS RTK[CR],CORS STATIC[CS]:"))
+  (if (= (strcase gtype) "A")(setq gtype "AUSPOS"))
+  (if (= (strcase gtype) "S")(setq gtype "Static GNSS"))
+  (if (= (strcase gtype) "R")(setq gtype "RTK GNSS"))
+  (if (= (strcase gtype) "CN")(setq gtype "CORS NRTK GNSS"))
+  (if (= (strcase gtype) "CR")(setq gtype "CORS RTK GNSS"))
+  (if (= (strcase gtype) "CS")(setq gtype "CORS Static GNSS"))
   (AA)
   )
 (defun C:XAAS (/)
@@ -6590,6 +6929,7 @@
   (COMMAND "ERASE" EN "")
   (SETVAR "CLAYER" layer)
   (COMMAND "ARC" "c" (TRANS CP 0 1) (TRANS P1 0 1) (TRANS P2 0 1 ))
+  (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
 
   (if (= mandist 1)(setq arclength (getstring "\nManual Chord Distance:")))
   (if (= mandist 1)(setq radius (getstring "\nManual Radius:")))
@@ -6601,6 +6941,8 @@
   
   (if (= compile 1)(setq distx (strcat "length=\"" arclength"\" arcType=\"Compiled\"")))
   (if (= compile 2)(setq distx (strcat "length=\"" arclength"\" arcType=\"Measured\"")));strata
+    (if (= compile 10)(setq distx (strcat "horizDistance=\"" ldist"\" distanceType=\""gtype"\"")
+			  azimuthx (strcat "azimuth=\"" lbearing "\" azimuthType=\""gtype"\" ")))
   
   (if (= cbrq "Y")(setq  azimuthx (strcat "chordAzimuth=\"" lbearing "\" ")))
   (if (= cbrq "N")(setq  azimuthx ""))
@@ -6620,6 +6962,8 @@
    
       (setq lradius (rtos radius 2 3))
     (if (= cbrq "N")(setq bearing ""))
+
+      (if (= compile 10)(setq comment (strcat comment " " gtype)))
   
 (lbarc);label arc using function
 
@@ -10706,6 +11050,8 @@
   (setq arclist (list));list of arcs which have been drawn
   (setq poplist (list));list of pops for creation at the end
   (setq islist (list));list of instrument stations for cg point reference
+  (setq gnsslist (list));list of GNSS obs
+  (setq gvtlist (list));list of GNSS obs and comparisons for GNSS Validation table
   (setq vertobslist (list))
   (setq pmboxmark nil);reset spot for coordinte box
   (setq bmboxmark nil);reset spot for benchmark box
@@ -11147,7 +11493,7 @@
 (setq wwpos (vl-string-position 34 linetext (+ stringpos 6)))(setq mparea (substr linetext (+ stringpos 7) (-(- wwpos 1)(+ stringpos 5)))))(setq mparea ""))
 
 					    (if (/= "" mparea) (progn
-					    (setq area (atof mparea))
+					    (setq area1 (atof mparea))
 
 					     (if (= ard "YES")
 	(progn
@@ -11776,7 +12122,7 @@
 					    
 					    ;make area to 4 significant figures
 					    (if (/= "" pclarea) (progn
-					    (setq area (atof pclarea))
+					    (setq area1 (atof pclarea))
 
 					     (if (= ard "YES")
 	(progn
@@ -12864,7 +13210,7 @@
   ;13. OBERSVATIONS
 
 
-  ;READ OBSERVATIONS TO DISCOVER DOUBLE REFERENCES
+  ;READ OBSERVATIONS TO DISCOVER DOUBLE REFERENCES AND FIND ANY GNSS OBSERVATIONS
 
 
    (close xmlfile)
@@ -12912,6 +13258,17 @@
 		    (setq dist "")
 	      );dist may be missing eg trig obs
 
+	      (if (/= (setq stringpos (vl-string-search "distanceType=" linetext ))nil)(progn
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 14)))
+            (setq distancetype (strcat " distanceType=\"" (substr linetext (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))) "\" "))
+	    (setq dtype (substr linetext (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))))
+		  )
+		(setq distancetype ""));else
+
+	    (if (/= (setq stringpos (vl-string-search "azimuthType=" linetext ))nil)(progn
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 13)))
+            (setq azimuthtype (strcat " azimuthType=\"" (substr linetext (+ stringpos 14) (-(- wwpos 1)(+ stringpos 12))) "\" ")))(setq azimuthtype ""))
+
 	       (if (/= (setq stringpos (vl-string-search "<FieldNote>" linetext )) nil)(progn
 											   
 (if (setq wwpos (vl-string-position 34 linetext (+ stringpos 12)))
@@ -12925,6 +13282,7 @@
   )
 )
   (setq comment ""))
+
 	    
 
 	    (setq pos1 (vl-position setupid cgpointlist))
@@ -12949,6 +13307,16 @@
 				(SETQ SREF (APPEND SREF (LIST (STRCAT bearing "-" TARGETID)) (LIST dist)  (LIST setupid) (LIST targetid)  (LIST comment)))
 				)
 	      );IF "r"
+
+	    (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn
+     (setq gnsslist (append gnsslist (list (strcat setupid "-" targetid))(list bearing) (list dist)(list dtype)))
+     ))
 
 	    
 	    ));if line
@@ -13023,6 +13391,7 @@
 	    (if (/= (setq stringpos (vl-string-search "distanceType=" linetext ))nil)(progn
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 14)))
             (setq distancetype (strcat " distanceType=\"" (substr linetext (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))) "\" ")))(setq distancetype ""))
+	    
 
 	    (if (/= (setq stringpos (vl-string-search "azimuthType=" linetext ))nil)(progn
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 13)))
@@ -13261,6 +13630,31 @@
 		  )
 
   (command "line" lp1c lp2c "")
+   (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment distancetype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	  (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
+
+
 (setq linedrawn "1");tick line drawn
 (if (/= xbearing "")(setq bearings (STRCAT "azimuth=\"" xbearing "\" "))(setq bearings ""))
 (if (/= vertdistance "")(setq overtdist (strcat " vertDistance=\"" vertdistance "\" "))(setq overtdist ""))
@@ -13375,8 +13769,8 @@
 
       (SETVAR "CLAYER"  "PM Connection" )
 
-(if (vl-position  (strcat lp1c ","lp2c "," rolayer) linelist)()
-  (progn
+;(if (vl-position  (strcat lp1c ","lp2c "," rolayer) linelist)() ;removed 1.16 to allow gnss validation
+  ;(progn
     
     (setq eccount 0)
 		(repeat (length errorcodelist)
@@ -13386,7 +13780,31 @@
 		  )
     
       (command "line" lp1c lp2c "")
+  (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment distancetype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	 (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
     (setq linedrawn "1");tick line drawn
+
 
     
   ;GET LAST LINE DATA
@@ -13411,7 +13829,7 @@
     
  (if (/= (vl-position (strcat lp1c "," lp2c "," rolayer) linelist)nil)()(lba));else label line if not already labelled
      (if (/= (getvar "CECOLOR") "BYLAYER") (setvar "CECOLOR" "BYLAYER"))
-  ))
+  ;))
 
 ;SPECIAL CASE WHERE PM IS A REFERENCE MARK
 
@@ -13464,6 +13882,29 @@
 		  )
 	    
 	     (command "line" lp1c lp2c "")
+  (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment distancetype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	  (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
 	    
 
 (setq rmcomment "");delete comment for RM drafting	    
@@ -13561,6 +14002,29 @@
 		  )
    
       (command "line" lp1c lp2c "")
+   (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment distancetype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	  (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
     
     (setq linedrawn "1");tick line drawn
 
@@ -13665,6 +14129,29 @@
 
 
   (command "line" lp1c lp2c "")
+  (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment distancetype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	  (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
 (setq linedrawn "1");tick line drawn
 
   (if (/= xbearing "")(setq bearings (STRCAT "azimuth=\"" xbearing "\" "))(setq bearings ""))
@@ -13761,6 +14248,29 @@
 
     
   (command "line" lp1c lp2c "")
+   (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment distancetype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	  (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
   (setq linedrawn "1");tick line drawn
   (if (/= xbearing "")(setq bearings (STRCAT "azimuth=\"" xbearing "\" "))(setq bearings ""))
   (if (/= vertdistance "")(setq overtdist (strcat " vertDistance=\"" vertdistance "\" "))(setq overtdist ""))
@@ -13982,6 +14492,30 @@
 
     
       (command "line" lp1c lp2c "")
+  (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment distancetype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	  (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
     
 (if (/= xbearing "")(setq bearings (STRCAT "azimuth=\"" xbearing "\" "))(setq bearings ""))
     (if (/= vertdistance "")(setq overtdist (strcat " vertDistance=\"" vertdistance "\" "))(setq overtdist ""))
@@ -14224,6 +14758,16 @@
 
     
 	     (if (= curverot "ccw") (command "arc" "c" curvecenc lp1c lp2c)(command "arc" "c" curvecenc lp2c lp1c))
+    (if (or (= arcType " arcType=\"AUSPOS\" ")
+		    (= arcType " arcType=\"Static GNSS\" ")
+		    (= arcType " arcType=\"RTK GNSS\" ")
+		   (= arcType " arcType=\"CORS NRTK GNSS\" ")
+		    (= arcType " arcType=\"CORS RTK GNSS\" ")
+		    (= arcType " arcType=\"CORS Static GNSS\" "))
+   (progn
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment arcType))
+   ))
   (setq linedrawn 1)
 ;Add observation data to line as XDATA
  (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedArcObservation>"))(setq ocomment "/>"))
@@ -14438,6 +14982,16 @@
 		  )
 
        (if (= curverot "ccw") (command "arc" "c" curvecenc lp1c lp2c)(command "arc" "c" curvecenc lp2c lp1c))
+(if (or (= arcType " arcType=\"AUSPOS\" ")
+		    (= arcType " arcType=\"Static GNSS\" ")
+		    (= arcType " arcType=\"RTK GNSS\" ")
+		   (= arcType " arcType=\"CORS NRTK GNSS\" ")
+		    (= arcType " arcType=\"CORS RTK GNSS\" ")
+		    (= arcType " arcType=\"CORS Static GNSS\" "))
+   (progn
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment arcType))
+   ))
       
  (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedArcObservation>"))(setq ocomment "/>"))
 (SETQ BDINFO (STRCAT "chordAzimuth=\"" xbearing "\" length=\"" arclength "\" radius=\"" radius  "\" rot=\"" curverot "\"" arcType ocomment))
@@ -14587,6 +15141,16 @@
 
     
        (if (= curverot "ccw") (command "arc" "c" curvecenc lp1c lp2c)(command "arc" "c" curvecenc lp2c lp1c))
+   (if (or (= arcType " arcType=\"AUSPOS\" ")
+		    (= arcType " arcType=\"Static GNSS\" ")
+		    (= arcType " arcType=\"RTK GNSS\" ")
+		   (= arcType " arcType=\"CORS NRTK GNSS\" ")
+		    (= arcType " arcType=\"CORS RTK GNSS\" ")
+		    (= arcType " arcType=\"CORS Static GNSS\" "))
+   (progn
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment arcType))
+   ))
       
   (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedArcObservation>"))(setq ocomment "/>"))
 (SETQ BDINFO (STRCAT "chordAzimuth=\"" xbearing "\" length=\"" arclength "\" radius=\"" radius  "\" rot=\"" curverot "\""  arcType ocomment))
@@ -15700,6 +16264,160 @@
   (setq count (+ count 1))
     )
   ));p&if levellist
+
+
+
+  (if (> (LENGTH gvtlist) 0)
+    (PROGN
+
+      (if (= bmboxmark nil) (setq gvboxmark (list (+ maxeast (* 110 th)) (- minnorth (* 2 th)))))
+     (if (and (/= bmboxmark nil) (= hdboxmark nil)) (setq gvboxmark (list (+ maxeast (* 189 th)) (- minnorth (* 2 th)))))
+    (if (and (/= bmboxmark nil) (/= hdboxmark nil)) (setq gvboxmark (list (+ maxeast (* 253 th)) (- minnorth (* 2 th)))))
+
+
+
+ 
+			 
+			 (setq p10 (list (+ (car gvboxmark) (* 64 th))(+ (cadr gvboxmark) (* -2.5 th))))
+			 (setq p11 (list (+ (car gvboxmark) 0)(+ (cadr gvboxmark) (* -2.5 th))))
+			 (setq p12 (list (+ (car gvboxmark) (* th 32))(+ (cadr gvboxmark) (* -1.25 th))))
+			 (command "rectangle" gvboxmark p10)
+			 (command "text" "j" "mc" p12 th "90" "GNSS VALIDATION SCHEDULE")
+			 (setq gvboxmark p11)
+                         ;box corners
+			 (setq p10 (list (+ (car gvboxmark) 0)(+ (cadr gvboxmark) (* -2.5 th))))
+			 (setq p11 (list (+ (car gvboxmark) (* 12 th))(+ (cadr gvboxmark)  0 )))
+			 (setq p12 (list (+ (car gvboxmark) (* 24 th))(+ (cadr gvboxmark) (* -2.5 th))))
+			 (setq p13 (list (+ (car gvboxmark) (* 36 th))(+ (cadr gvboxmark)  0 )))
+			 (setq p14 (list (+ (car gvboxmark) (* 48 th))(+ (cadr gvboxmark) (* -2.5 th))))
+			 (setq p15 (list (+ (car gvboxmark) (* 64 th))(+ (cadr gvboxmark)  0 )))
+			
+			 
+			 ;draw boxes
+			 (command "rectangle" p10 p11)
+			 (command "rectangle" p11 p12)
+			 (command "rectangle" p12 p13)
+			 (command "rectangle" p13 p14)
+			 (command "rectangle" p14 p15)
+			 
+			 
+			 ;text insertion points
+			 (setq p20 (list (+ (car gvboxmark) (* 6 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p21 (list (+ (car gvboxmark) (* 18 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p22 (list (+ (car gvboxmark) (* 30 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p23 (list (+ (car gvboxmark) (* 42 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p24 (list (+ (car gvboxmark) (* 56 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 
+			 ;create text
+			 (command "text" "j" "mc" p20 th "90" "FROM")
+			 (command "text" "j" "mc" p21 th "90" "TO")
+			 (command "text" "j" "mc" p22 th "90" "GRID BEARING")
+			 (command "text" "j" "mc" p23 th "90" "DISTANCE")
+			 (command "text" "j" "mc" p24 th "90" "METHOD")
+
+			 ;reset pm box mark point
+			 (setq gvboxmark p10)
+
+
+
+(setq count 0)
+      (repeat (/ (length gvtlist) 7)
+	
+	(if (/= (setq pm1 (cadr (member (nth count gvtlist) drawpmlist))) nil)()(setq pm1 ""))
+	(if (/= (setq pm2 (cadr (member (nth (+ count 1) gvtlist) drawpmlist))) nil)()(setq pm2 ""))
+	(setq gbearing (nth (+ count 2) gvtlist))
+	(setq gdist (nth (+ count 3) gvtlist))
+        (setq ebearing (nth (+ count 4) gvtlist))
+	(setq edist (nth (+ count 5) gvtlist))
+	(setq gtype (nth (+ count 6) gvtlist))
+
+	;Format gbearing for string output
+  (if (/= (vl-string-position 46 gbearing 0) nil ) (PROGN
+  (setq dotpt1 (vl-string-position 46 gbearing 0))
+  (setq deg  (substr gbearing 1  dotpt1 ))
+  (SETQ mins   (substr gbearing (+ dotpt1 2) 2) )
+  (if (= (strlen mins) 1)(setq mins (strcat  mins "0")));fix problem with truncating zeros on minutes and seconds
+  (setq mins (strcat mins "'"))
+  (setq sec  (substr gbearing (+ dotpt1 4) 10))
+  (if (= (strlen sec) 1) (setq sec (strcat sec "0")))
+
+  
+  (if (> (strlen sec) 2) (setq sec (strcat (substr sec 1 2) "." (substr sec 3 10))))
+  (if (= (strlen sec) 0) (setq sec "") (setq sec (strcat sec (chr 34))))
+  
+  );P
+	(progn
+	  (setq deg gbearing)
+	  (setq mins "")
+	  (setq sec "")
+	  );p else
+  
+  );IF
+	(if (/= gbearing "")(setq gbearing (strcat  deg "°" mins sec)))
+	(if (/= ebearing "")(setq ebearing (vl-string-subst  "°" "d" ebearing)))
+
+		  
+      
+
+  
+  			;box corners
+                       ;box corners
+			 (setq p10 (list (+ (car gvboxmark) 0)(+ (cadr gvboxmark) (* -5 th))))
+			 (setq p11 (list (+ (car gvboxmark) (* 12 th))(+ (cadr gvboxmark)  0 )))
+			 (setq p12 (list (+ (car gvboxmark) (* 24 th))(+ (cadr gvboxmark) (* -5 th))))
+			 (setq p13 (list (+ (car gvboxmark) (* 36 th))(+ (cadr gvboxmark)  (* -2.5 th) )))
+			 (setq p14 (list (+ (car gvboxmark) (* 24 th))(+ (cadr gvboxmark) 0)))
+			 (setq p15 (list (+ (car gvboxmark) (* 48 th))(+ (cadr gvboxmark)  0 )))
+                         (setq p16 (list (+ (car gvboxmark) (* 48 th))(+ (cadr gvboxmark)  (* -5 th))))
+                         (setq p17 (list (+ (car gvboxmark) (* 64 th))(+ (cadr gvboxmark)  (* -2.5 th))))
+  
+  
+			 
+			 ;draw boxes
+			 (command "rectangle" p10 p11)
+			 (command "rectangle" p11 p12)
+			 (command "rectangle" p12 p13)
+			 (command "rectangle" p14 p13)
+			 (command "rectangle" p13 p15)
+			 (command "rectangle" p13 p16)
+			 (command "rectangle" p15 p17)
+			 (command "rectangle" p16 p17)
+                         
+			 
+			 ;text insertion points
+			 (setq p20 (list (+ (car gvboxmark) (* 6 th))(+ (cadr gvboxmark)  (* -2.5 th ))))
+			 (setq p21 (list (+ (car gvboxmark) (* 18 th))(+ (cadr gvboxmark)  (* -2.5 th ))))
+			 (setq p22 (list (+ (car gvboxmark) (* 30 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p23 (list (+ (car gvboxmark) (* 30 th))(+ (cadr gvboxmark)  (* -3.75 th ))))
+			 (setq p24 (list (+ (car gvboxmark) (* 42 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p25 (list (+ (car gvboxmark) (* 42 th))(+ (cadr gvboxmark)  (* -3.75 th ))))
+			 (setq p26 (list (+ (car gvboxmark) (* 56 th))(+ (cadr gvboxmark)  (* -1.25 th ))))
+			 (setq p27 (list (+ (car gvboxmark) (* 56 th))(+ (cadr gvboxmark)  (* -3.75 th ))))
+                         
+			 
+			 ;create text
+			 (command "text" "j" "mc" p20 th "90" pm1)
+			 (command "text" "j" "mc" p21 th "90" pm2)
+			 (command "text" "j" "mc" p22 th "90" gbearing)
+			 (command "text" "j" "mc" p23 th "90" ebearing)
+			 (command "text" "j" "mc" p24 th "90" gdist)
+			 (command "text" "j" "mc" p25 th "90" edist)
+			 (command "text" "j" "mc" p26 th "90" gtype)
+			 (command "text" "j" "mc" p27 th "90" "EDM TRAVERSE")
+  		
+  
+			 ;reset pm box mark point
+			 (setq gvboxmark p10)
+
+
+      (setq count (+ count 7))
+	);r
+
+      ));if gvtlist
+
+
+
+			      
 
   
 

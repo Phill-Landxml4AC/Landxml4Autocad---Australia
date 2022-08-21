@@ -32,11 +32,15 @@
 [Assign line to XML (XAL)]^C^CXAL
 [Assign line to XML with note (XALN)]^C^CXALN
 [Assign line to XML (Compiled) (XALC)]^C^CXALC
+[Assign line to XML (GNSS) (XALG)]^C^CXALG
 [Assign line to XML (Compiled with note) (XALCN)]^C^CXALCN
+[Assign line to XML (GNSS with note) (XALGN)]^C^CXALGN
 [Assign arc to XML (XAA)]^C^CXAA
 [Assign arc to XML with note(XAAN)]^C^CXAAN
 [Assign arc to XML (Compiled) (XAAC)]^C^CXAAC
+[Assign arc to XML (GNSS) (XAAG)]^C^CXAAG
 [Assign arc to XML (Compiled with note) (XAACN)]^C^CXAACN
+[Assign arc to XML (GNSS with note) (XAACN)]^C^CXAAGN
 [Assign Polyline (Lot) to XML (XAP)]^C^CXAP
 [Assign Polyline (Easement) to XML (XAE)]^C^CXAE
 [Assign Polyline (New Road) to XML (XAR)]^C^CXAR
