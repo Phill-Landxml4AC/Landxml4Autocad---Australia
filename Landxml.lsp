@@ -421,6 +421,7 @@
 (princ "\nXSF - Add combined scale factor information to line")
 (princ "\nXHD - Add height difference to line")
 (princ "\nXDP - Create Datum Point")
+(princ "\nXGV - Create GNSS Validation Schedule")
 (princ "\nXOC - Create occupation offset")
 (princ "\nXOQ - Create Queensland style point occupation")
 (princ "\nXCP - Create Pops on Lot corners")
@@ -432,11 +433,15 @@
 (princ "\nXAL- Assign line to XML")
 (princ "\nXALN - Assign line with note")
 (princ "\nXALC - Assign line as compiled")
+(princ "\nXALG - Assign line as GNSS")
 (princ "\nXALCN - Assign line as compiled with note")
+(princ "\nXALGN - Assign line as GNSS with note")
 (princ "\nXAA - Assign arc to XML")
 (princ "\nXAAN - Assign arc with note")
 (princ "\nXAAC - Assign arc as compiled")
+(princ "\nXAAG - Assign arc as GNSS")
 (princ "\nXAACN - Assign arc as compiled with note")
+(princ "\nXAAGN - Assign arc as GNSS with note")
 (princ "\nXAP - Assign Polyline Lot to XML")
 (princ "\nXAE - Assign Polyline Easement to XML")
 (princ "\nXAR - Assign Polyline Road to XML")
@@ -11052,6 +11057,7 @@
   (setq islist (list));list of instrument stations for cg point reference
   (setq gnsslist (list));list of GNSS obs
   (setq gvtlist (list));list of GNSS obs and comparisons for GNSS Validation table
+  (setq gnssoblist (list));list of GNSS obs that dont have matching EDM Trav obs for use in XINO
   (setq vertobslist (list))
   (setq pmboxmark nil);reset spot for coordinte box
   (setq bmboxmark nil);reset spot for benchmark box
@@ -11218,6 +11224,189 @@
 ));p&w not observation group
 
 
+
+
+  
+  ;READ OBSERVATIONS TO FIND ANY GNSS OBSERVATIONS
+
+   (close xmlfile)
+   (setq xmlfile (open xmlfilen "r"))
+(linereader)
+
+  ;linefeed to obs
+ (while (= (vl-string-search "<ObservationGroup" linetext) nil) ( progn
+ (linereader)
+))
+
+  (linereader)
+  
+   
+(while (= (vl-string-search "</ObservationGroup>" linetext ) nil)( progn
+								  
+		;line observation--------------------------------------------------------------------------------------------------
+		(if (/= (vl-string-search "<ReducedObservation" linetext ) nil)
+	    (progn
+	      	      
+	    (setq stringpos (vl-string-search "setupID" linetext ))
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
+            (setq setupids (strcat "IS-" (substr linetext (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8)))))
+	    (setq pos1 (vl-position setupids islist))
+	    (setq setupid (nth (+ pos1 1) islist))
+
+	    (setq stringpos (vl-string-search "targetSetupID" linetext ))
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 15)))
+            (setq targetid (strcat "IS-" (substr linetext (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14)))))
+	    (setq pos1 (vl-position targetid islist))
+	    (setq targetid (nth (+ pos1 1) islist))
+
+	    (if (/= (setq stringpos (vl-string-search "azimuth" linetext )) nil)(progn
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
+            (setq bearing (substr linetext (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8))))
+	    (setq xbearing bearing)
+	    )(setq bearing ""
+		   xbearing ""));azimuth may be missing eg compile or strata
+
+	    (if (/= (setq stringpos (vl-string-search "horizDistance" linetext )) nil)(progn
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 15)))
+            (setq dist (substr linetext (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14)))))
+		    (setq dist "")
+	      );dist may be missing eg trig obs
+
+	      (if (/= (setq stringpos (vl-string-search "distanceType=" linetext ))nil)(progn
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 14)))
+            (setq distancetype (strcat " distanceType=\"" (substr linetext (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))) "\" "))
+	    (setq dtype (substr linetext (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))))
+		  )
+		(setq distancetype ""));else
+
+	    (if (/= (setq stringpos (vl-string-search "azimuthType=" linetext ))nil)(progn
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 13)))
+            (setq azimuthtype (strcat " azimuthType=\"" (substr linetext (+ stringpos 14) (-(- wwpos 1)(+ stringpos 12))) "\" ")))(setq azimuthtype ""))
+
+	       (if (/= (setq stringpos (vl-string-search "<FieldNote>" linetext )) nil)(progn
+											   
+(if (setq wwpos (vl-string-position 34 linetext (+ stringpos 12)))
+  (progn;if field not contains ""s
+    (setq comment (substr linetext (+ stringpos 13) (-(- wwpos 1)(+ stringpos 11))))
+    )
+  (progn; else use the < to get other end of field note
+    (setq <pos (vl-string-position 60 linetext (+ stringpos 11)))
+    (setq comment (substr linetext (+ stringpos 12) (-(- <pos 1)(+ stringpos 10))))
+    )
+  )
+)
+  (setq comment ""))
+
+	    (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn
+     (setq gnsslist (append gnsslist (list (strcat setupid "-" targetid))(list bearing) (list dist)(list dtype)))
+    
+     ))
+
+	    
+	    ));if line
+		(linereader)
+	    ));if not obs group
+
+   ;READ AGAIN TO FIND GNSS OBSERVATIONS WITHOUT A MATCHING EDM TRAVERSE OBSERVATION
+
+   (close xmlfile)
+   (setq xmlfile (open xmlfilen "r"))
+(linereader)
+
+  ;linefeed to obs
+ (while (= (vl-string-search "<ObservationGroup" linetext) nil) ( progn
+ (linereader)
+))
+
+  (linereader)
+  
+   
+(while (= (vl-string-search "</ObservationGroup>" linetext ) nil)( progn
+								  
+		;line observation--------------------------------------------------------------------------------------------------
+		(if (/= (vl-string-search "<ReducedObservation" linetext ) nil)
+	    (progn
+	      	      
+	    (setq stringpos (vl-string-search "setupID" linetext ))
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
+            (setq setupids (strcat "IS-" (substr linetext (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8)))))
+	    (setq pos1 (vl-position setupids islist))
+	    (setq setupid (nth (+ pos1 1) islist))
+
+	    (setq stringpos (vl-string-search "targetSetupID" linetext ))
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 15)))
+            (setq targetid (strcat "IS-" (substr linetext (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14)))))
+	    (setq pos1 (vl-position targetid islist))
+	    (setq targetid (nth (+ pos1 1) islist))
+
+	    (if (/= (setq stringpos (vl-string-search "azimuth" linetext )) nil)(progn
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
+            (setq bearing (substr linetext (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8))))
+	    (setq xbearing bearing)
+	    )(setq bearing ""
+		   xbearing ""));azimuth may be missing eg compile or strata
+
+	    (if (/= (setq stringpos (vl-string-search "horizDistance" linetext )) nil)(progn
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 15)))
+            (setq dist (substr linetext (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14)))))
+		    (setq dist "")
+	      );dist may be missing eg trig obs
+
+	      (if (/= (setq stringpos (vl-string-search "distanceType=" linetext ))nil)(progn
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 14)))
+            (setq distancetype (strcat " distanceType=\"" (substr linetext (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))) "\" "))
+	    (setq dtype (substr linetext (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))))
+		  )
+		(setq distancetype ""));else
+
+	    (if (/= (setq stringpos (vl-string-search "azimuthType=" linetext ))nil)(progn
+	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 13)))
+            (setq azimuthtype (strcat " azimuthType=\"" (substr linetext (+ stringpos 14) (-(- wwpos 1)(+ stringpos 12))) "\" ")))(setq azimuthtype ""))
+
+	       (if (/= (setq stringpos (vl-string-search "<FieldNote>" linetext )) nil)(progn
+											   
+(if (setq wwpos (vl-string-position 34 linetext (+ stringpos 12)))
+  (progn;if field not contains ""s
+    (setq comment (substr linetext (+ stringpos 13) (-(- wwpos 1)(+ stringpos 11))))
+    )
+  (progn; else use the < to get other end of field note
+    (setq <pos (vl-string-position 60 linetext (+ stringpos 11)))
+    (setq comment (substr linetext (+ stringpos 12) (-(- <pos 1)(+ stringpos 10))))
+    )
+  )
+)
+  (setq comment ""))
+
+	    ;if a not a GNSS but does have a matching gnss obs remove from list (leave a list of GNSS obs only)
+	    (if (and (/= distancetype " distanceType=\"AUSPOS\" ")
+		    (/= distancetype " distanceType=\"Static GNSS\" ")
+		    (/= distancetype " distanceType=\"RTK GNSS\" ")
+		    (/= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (/= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (/= distancetype " distanceType=\"CORS Static GNSS\" ")
+		     (vl-position (strcat setupid "-" targetid) gnsslist ))
+   (progn
+     (setq gnssoblist (append gnssoblist (list (strcat setupid "-" targetid)))) 
+     ))
+
+	    
+	    ));if line
+		(linereader)
+	    ));if not obs group
+
+  
+
+
+
+
+
+  
 
   
 (close xmlfile)
@@ -13308,21 +13497,15 @@
 				)
 	      );IF "r"
 
-	    (if (or (= distancetype " distanceType=\"AUSPOS\" ")
-		    (= distancetype " distanceType=\"Static GNSS\" ")
-		    (= distancetype " distanceType=\"RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
-   (progn
-     (setq gnsslist (append gnsslist (list (strcat setupid "-" targetid))(list bearing) (list dist)(list dtype)))
-     ))
-
+	  
 	    
 	    ));if line
 		(linereader)
 	    ));if not obs group
 
+  
+
+  
 
 
   ;CLOSE FILE AND READ TO OBSERVATION GROUP AGAIN
@@ -13390,7 +13573,10 @@
 
 	    (if (/= (setq stringpos (vl-string-search "distanceType=" linetext ))nil)(progn
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 14)))
-            (setq distancetype (strcat " distanceType=\"" (substr linetext (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))) "\" ")))(setq distancetype ""))
+            (setq distancetype (strcat " distanceType=\"" (substr linetext (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))) "\" "))
+	    (setq dtype (substr linetext (+ stringpos 15) (-(- wwpos 1)(+ stringpos 13))))
+		  )
+		(setq distancetype ""));else
 	    
 
 	    (if (/= (setq stringpos (vl-string-search "azimuthType=" linetext ))nil)(progn
@@ -13630,29 +13816,7 @@
 		  )
 
   (command "line" lp1c lp2c "")
-   (if (or (= distancetype " distanceType=\"AUSPOS\" ")
-		    (= distancetype " distanceType=\"Static GNSS\" ")
-		    (= distancetype " distanceType=\"RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
-   (progn;if it is a GNSS obs
-	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
-   (setq comment (strcat comment distancetype))
-   )
-
-   (progn;if its not a GNSS obs check against gnsslist for gvt table
-
-     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
-       (progn
-	 (setq gbearing (cadr remlist))
-	 (setq gdist (caddr remlist))
-	  (setq dtype (nth 3 remlist))
-	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
-	 ));if is in gnss list
-     
-   );p is not a gnss obs
-   );if gnss obs
+  
 
 
 (setq linedrawn "1");tick line drawn
@@ -13670,6 +13834,29 @@
    (setq NEWSENTLIST (APPEND SENTLIST XDATA))
   (ENTMOD NEWSENTLIST)
 
+  (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment dtype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	  (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
 
   ;GET LAST LINE DATA
   (SETQ SENT (ENTLAST))
@@ -13780,29 +13967,7 @@
 		  )
     
       (command "line" lp1c lp2c "")
-  (if (or (= distancetype " distanceType=\"AUSPOS\" ")
-		    (= distancetype " distanceType=\"Static GNSS\" ")
-		    (= distancetype " distanceType=\"RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
-   (progn;if it is a GNSS obs
-	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
-   (setq comment (strcat comment distancetype))
-   )
-
-   (progn;if its not a GNSS obs check against gnsslist for gvt table
-
-     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
-       (progn
-	 (setq gbearing (cadr remlist))
-	 (setq gdist (caddr remlist))
-	 (setq dtype (nth 3 remlist))
-	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
-	 ));if is in gnss list
-     
-   );p is not a gnss obs
-   );if gnss obs
+  
     (setq linedrawn "1");tick line drawn
 
 
@@ -13826,6 +13991,30 @@
   (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 BDINFO)))))
    (setq NEWSENTLIST (APPEND SENTLIST XDATA))
   (ENTMOD NEWSENTLIST)
+
+(if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment dtype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	 (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
     
  (if (/= (vl-position (strcat lp1c "," lp2c "," rolayer) linelist)nil)()(lba));else label line if not already labelled
      (if (/= (getvar "CECOLOR") "BYLAYER") (setvar "CECOLOR" "BYLAYER"))
@@ -13882,29 +14071,7 @@
 		  )
 	    
 	     (command "line" lp1c lp2c "")
-  (if (or (= distancetype " distanceType=\"AUSPOS\" ")
-		    (= distancetype " distanceType=\"Static GNSS\" ")
-		    (= distancetype " distanceType=\"RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
-   (progn;if it is a GNSS obs
-	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
-   (setq comment (strcat comment distancetype))
-   )
-
-   (progn;if its not a GNSS obs check against gnsslist for gvt table
-
-     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
-       (progn
-	 (setq gbearing (cadr remlist))
-	 (setq gdist (caddr remlist))
-	  (setq dtype (nth 3 remlist))
-	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
-	 ));if is in gnss list
-     
-   );p is not a gnss obs
-   );if gnss obs
+  
 	    
 
 (setq rmcomment "");delete comment for RM drafting	    
@@ -13936,6 +14103,30 @@
   (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 PTINFO)))))
    (setq NEWSENTLIST (APPEND SENTLIST XDATA))
   (ENTMOD NEWSENTLIST)
+
+	    (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment dtype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	  (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
 
   
 					       (setq drawnrmlist (append drawnrmlist (list (strcat setupid "-" rmtype))))
@@ -14002,29 +14193,7 @@
 		  )
    
       (command "line" lp1c lp2c "")
-   (if (or (= distancetype " distanceType=\"AUSPOS\" ")
-		    (= distancetype " distanceType=\"Static GNSS\" ")
-		    (= distancetype " distanceType=\"RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
-   (progn;if it is a GNSS obs
-	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
-   (setq comment (strcat comment distancetype))
-   )
-
-   (progn;if its not a GNSS obs check against gnsslist for gvt table
-
-     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
-       (progn
-	 (setq gbearing (cadr remlist))
-	 (setq gdist (caddr remlist))
-	  (setq dtype (nth 3 remlist))
-	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
-	 ));if is in gnss list
-     
-   );p is not a gnss obs
-   );if gnss obs
+  
     
     (setq linedrawn "1");tick line drawn
 
@@ -14041,6 +14210,29 @@
   (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 BDINFO)))))
    (setq NEWSENTLIST (APPEND SENTLIST XDATA))
   (ENTMOD NEWSENTLIST)
+    (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment dtype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	  (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
     
  
 (lrm)
@@ -14129,7 +14321,22 @@
 
 
   (command "line" lp1c lp2c "")
-  (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+  
+(setq linedrawn "1");tick line drawn
+
+  (if (/= xbearing "")(setq bearings (STRCAT "azimuth=\"" xbearing "\" "))(setq bearings ""))
+  
+  
+;Add observation data to line as XDATA
+ (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedObservation>"))(setq ocomment "/>"))
+(SETQ BDINFO (STRCAT bearings "horizDistance=\"" dist "\"" distanceType azimuthtype adoptedDistanceSurvey distanceAccClass ocomment))
+(SETQ SENT (ENTLAST))
+  (SETQ SENTLIST (ENTGET SENT))
+  (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 BDINFO)))))
+   (setq NEWSENTLIST (APPEND SENTLIST XDATA))
+  (ENTMOD NEWSENTLIST)
+
+(if (or (= distancetype " distanceType=\"AUSPOS\" ")
 		    (= distancetype " distanceType=\"Static GNSS\" ")
 		    (= distancetype " distanceType=\"RTK GNSS\" ")
 		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
@@ -14137,7 +14344,7 @@
 		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
    (progn;if it is a GNSS obs
 	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
-   (setq comment (strcat comment distancetype))
+   (setq comment (strcat comment dtype))
    )
 
    (progn;if its not a GNSS obs check against gnsslist for gvt table
@@ -14152,19 +14359,6 @@
      
    );p is not a gnss obs
    );if gnss obs
-(setq linedrawn "1");tick line drawn
-
-  (if (/= xbearing "")(setq bearings (STRCAT "azimuth=\"" xbearing "\" "))(setq bearings ""))
-  
-  
-;Add observation data to line as XDATA
- (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedObservation>"))(setq ocomment "/>"))
-(SETQ BDINFO (STRCAT bearings "horizDistance=\"" dist "\"" distanceType azimuthtype adoptedDistanceSurvey distanceAccClass ocomment))
-(SETQ SENT (ENTLAST))
-  (SETQ SENTLIST (ENTGET SENT))
-  (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 BDINFO)))))
-   (setq NEWSENTLIST (APPEND SENTLIST XDATA))
-  (ENTMOD NEWSENTLIST)
 
 
   ;GET LAST LINE DATA
@@ -14248,7 +14442,22 @@
 
     
   (command "line" lp1c lp2c "")
-   (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+  
+  (setq linedrawn "1");tick line drawn
+  (if (/= xbearing "")(setq bearings (STRCAT "azimuth=\"" xbearing "\" "))(setq bearings ""))
+  (if (/= vertdistance "")(setq overtdist (strcat " vertDistance=\"" vertdistance "\" "))(setq overtdist ""))
+  (if (/= MSLdistance "")(setq oMSLdist (strcat " MSLDistance=\"" MSLdistance "\" "))(setq oMSLdist ""))
+  
+;Add observation data to line as XDATA
+ (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedObservation>"))(setq ocomment "/>"))
+(SETQ BDINFO (STRCAT bearings "horizDistance=\"" dist "\"" distanceType azimuthtype overtdist oMSLdist ocomment))
+(SETQ SENT (ENTLAST))
+  (SETQ SENTLIST (ENTGET SENT))
+  (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 BDINFO)))))
+   (setq NEWSENTLIST (APPEND SENTLIST XDATA))
+  (ENTMOD NEWSENTLIST)
+
+     (if (or (= distancetype " distanceType=\"AUSPOS\" ")
 		    (= distancetype " distanceType=\"Static GNSS\" ")
 		    (= distancetype " distanceType=\"RTK GNSS\" ")
 		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
@@ -14256,7 +14465,7 @@
 		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
    (progn;if it is a GNSS obs
 	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
-   (setq comment (strcat comment distancetype))
+   (setq comment (strcat comment dtype))
    )
 
    (progn;if its not a GNSS obs check against gnsslist for gvt table
@@ -14271,20 +14480,6 @@
      
    );p is not a gnss obs
    );if gnss obs
-  (setq linedrawn "1");tick line drawn
-  (if (/= xbearing "")(setq bearings (STRCAT "azimuth=\"" xbearing "\" "))(setq bearings ""))
-  (if (/= vertdistance "")(setq overtdist (strcat " vertDistance=\"" vertdistance "\" "))(setq overtdist ""))
-  (if (/= MSLdistance "")(setq oMSLdist (strcat " MSLDistance=\"" MSLdistance "\" "))(setq oMSLdist ""))
-  
-;Add observation data to line as XDATA
- (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedObservation>"))(setq ocomment "/>"))
-(SETQ BDINFO (STRCAT bearings "horizDistance=\"" dist "\"" distanceType azimuthtype overtdist oMSLdist ocomment))
-(SETQ SENT (ENTLAST))
-  (SETQ SENTLIST (ENTGET SENT))
-  (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 BDINFO)))))
-   (setq NEWSENTLIST (APPEND SENTLIST XDATA))
-  (ENTMOD NEWSENTLIST)
- 
   
 
   ;GET LAST LINE DATA
@@ -14492,30 +14687,7 @@
 
     
       (command "line" lp1c lp2c "")
-  (if (or (= distancetype " distanceType=\"AUSPOS\" ")
-		    (= distancetype " distanceType=\"Static GNSS\" ")
-		    (= distancetype " distanceType=\"RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
-		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
-   (progn;if it is a GNSS obs
-	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
-   (setq comment (strcat comment distancetype))
-   )
-
-   (progn;if its not a GNSS obs check against gnsslist for gvt table
-
-     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
-       (progn
-	 
-	 (setq gbearing (cadr remlist))
-	 (setq gdist (caddr remlist))
-	  (setq dtype (nth 3 remlist))
-	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
-	 ));if is in gnss list
-     
-   );p is not a gnss obs
-   );if gnss obs
+  
     
 (if (/= xbearing "")(setq bearings (STRCAT "azimuth=\"" xbearing "\" "))(setq bearings ""))
     (if (/= vertdistance "")(setq overtdist (strcat " vertDistance=\"" vertdistance "\" "))(setq overtdist ""))
@@ -14531,6 +14703,31 @@
   (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 BDINFO)))))
    (setq NEWSENTLIST (APPEND SENTLIST XDATA))
   (ENTMOD NEWSENTLIST)
+
+    (if (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+   (progn;if it is a GNSS obs
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment dtype))
+   )
+
+   (progn;if its not a GNSS obs check against gnsslist for gvt table
+
+     (if (setq remlist (member (strcat setupid "-" targetid) gnsslist))
+       (progn
+	 
+	 (setq gbearing (cadr remlist))
+	 (setq gdist (caddr remlist))
+	  (setq dtype (nth 3 remlist))
+	 (setq gvtlist (append gvtlist (list setupid targetid gbearing gdist bearing dist dtype)))
+	 ));if is in gnss list
+     
+   );p is not a gnss obs
+   );if gnss obs
 
       (if (/= (vl-position (strcat lp1c "," lp2c "," rolayer) linelist) nil)()(lba));label line if not already labelled
     (if (/= (getvar "CECOLOR") "BYLAYER") (setvar "CECOLOR" "BYLAYER"))
@@ -14600,7 +14797,10 @@
 
 	    (if (/= (setq stringpos (vl-string-search "arcType" linetext )) nil)(progn
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
-            (setq arcType (strcat " arcType=\"" (substr linetext (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8))) "\"")))(setq arcType ""))
+            (setq arcType (strcat " arcType=\"" (substr linetext (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8))) "\""))
+	    (setq atype  (substr linetext (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8))))
+	    )
+	      (setq arcType ""))
 
 	       (if (/= (setq stringpos (vl-string-search "<FieldNote>" linetext )) nil)(progn
 											   
@@ -14758,16 +14958,7 @@
 
     
 	     (if (= curverot "ccw") (command "arc" "c" curvecenc lp1c lp2c)(command "arc" "c" curvecenc lp2c lp1c))
-    (if (or (= arcType " arcType=\"AUSPOS\" ")
-		    (= arcType " arcType=\"Static GNSS\" ")
-		    (= arcType " arcType=\"RTK GNSS\" ")
-		   (= arcType " arcType=\"CORS NRTK GNSS\" ")
-		    (= arcType " arcType=\"CORS RTK GNSS\" ")
-		    (= arcType " arcType=\"CORS Static GNSS\" "))
-   (progn
-	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
-   (setq comment (strcat comment arcType))
-   ))
+    
   (setq linedrawn 1)
 ;Add observation data to line as XDATA
  (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedArcObservation>"))(setq ocomment "/>"))
@@ -14777,6 +14968,17 @@
   (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 BDINFO)))))
    (setq NEWSENTLIST (APPEND SENTLIST XDATA))
   (ENTMOD NEWSENTLIST)
+
+    (if (or (= arcType " arcType=\"AUSPOS\" ")
+		    (= arcType " arcType=\"Static GNSS\" ")
+		    (= arcType " arcType=\"RTK GNSS\" ")
+		   (= arcType " arcType=\"CORS NRTK GNSS\" ")
+		    (= arcType " arcType=\"CORS RTK GNSS\" ")
+		    (= arcType " arcType=\"CORS Static GNSS\" "))
+   (progn
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment aType))
+   ))
  
   (if (member (strcat lp1c "," curvecenc "," lp2c "," rolayer) arclist)()(lbarc));label line if not already labelled;label arc using function
 (if (/= (getvar "CECOLOR") "BYLAYER") (setvar "CECOLOR" "BYLAYER"))
@@ -14982,16 +15184,7 @@
 		  )
 
        (if (= curverot "ccw") (command "arc" "c" curvecenc lp1c lp2c)(command "arc" "c" curvecenc lp2c lp1c))
-(if (or (= arcType " arcType=\"AUSPOS\" ")
-		    (= arcType " arcType=\"Static GNSS\" ")
-		    (= arcType " arcType=\"RTK GNSS\" ")
-		   (= arcType " arcType=\"CORS NRTK GNSS\" ")
-		    (= arcType " arcType=\"CORS RTK GNSS\" ")
-		    (= arcType " arcType=\"CORS Static GNSS\" "))
-   (progn
-	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
-   (setq comment (strcat comment arcType))
-   ))
+
       
  (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedArcObservation>"))(setq ocomment "/>"))
 (SETQ BDINFO (STRCAT "chordAzimuth=\"" xbearing "\" length=\"" arclength "\" radius=\"" radius  "\" rot=\"" curverot "\"" arcType ocomment))
@@ -15000,6 +15193,17 @@
   (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 BDINFO)))))
    (setq NEWSENTLIST (APPEND SENTLIST XDATA))
   (ENTMOD NEWSENTLIST)
+
+(if (or (= arcType " arcType=\"AUSPOS\" ")
+		    (= arcType " arcType=\"Static GNSS\" ")
+		    (= arcType " arcType=\"RTK GNSS\" ")
+		   (= arcType " arcType=\"CORS NRTK GNSS\" ")
+		    (= arcType " arcType=\"CORS RTK GNSS\" ")
+		    (= arcType " arcType=\"CORS Static GNSS\" "))
+   (progn
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment aType))
+   ))
 
      
 (if (/= (vl-position (strcat lp1c "," curvecenc "," lp2c "," rolayer) arclist) nil)()(lbarc));label line if not already labelled;label arc using function
@@ -15141,16 +15345,7 @@
 
     
        (if (= curverot "ccw") (command "arc" "c" curvecenc lp1c lp2c)(command "arc" "c" curvecenc lp2c lp1c))
-   (if (or (= arcType " arcType=\"AUSPOS\" ")
-		    (= arcType " arcType=\"Static GNSS\" ")
-		    (= arcType " arcType=\"RTK GNSS\" ")
-		   (= arcType " arcType=\"CORS NRTK GNSS\" ")
-		    (= arcType " arcType=\"CORS RTK GNSS\" ")
-		    (= arcType " arcType=\"CORS Static GNSS\" "))
-   (progn
-	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
-   (setq comment (strcat comment arcType))
-   ))
+ 
       
   (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedArcObservation>"))(setq ocomment "/>"))
 (SETQ BDINFO (STRCAT "chordAzimuth=\"" xbearing "\" length=\"" arclength "\" radius=\"" radius  "\" rot=\"" curverot "\""  arcType ocomment))
@@ -15159,6 +15354,17 @@
   (SETQ XDATA (LIST (LIST -3 (LIST "LANDXML" (CONS 1000 BDINFO)))))
    (setq NEWSENTLIST (APPEND SENTLIST XDATA))
   (ENTMOD NEWSENTLIST)
+
+      (if (or (= arcType " arcType=\"AUSPOS\" ")
+		    (= arcType " arcType=\"Static GNSS\" ")
+		    (= arcType " arcType=\"RTK GNSS\" ")
+		   (= arcType " arcType=\"CORS NRTK GNSS\" ")
+		    (= arcType " arcType=\"CORS RTK GNSS\" ")
+		    (= arcType " arcType=\"CORS Static GNSS\" "))
+   (progn
+	      (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+   (setq comment (strcat comment aType))
+   ))
 
      
       
@@ -20970,9 +21176,11 @@
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
             (setq setupid  (substr linetext (+ stringpos 10) (-(- wwpos 1)(+ stringpos 8))))
 	    
+	    
 	    (setq stringpos (vl-string-search "targetSetupID" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 15)))
             (setq targetid  (substr linetext (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14))))
+	    
 	    
 	    (if (setq stringpos (vl-string-search "azimuth" linetext ))(progn
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
@@ -21010,9 +21218,25 @@
 (setq &pos 0)
 	      (while (/=  (setq &pos (vl-string-search "&amp;" comment &pos )) nil) (setq comment (vl-string-subst "&" "&amp;"  comment &pos)
 										      &pos (+ &pos 1)))
-	    
 
-	    (if (or (= rolayer "Road")(= rolayer "Road Extent"))(progn
+	   (setq pos1 (vl-position (strcat "IS-" setupid) islist))
+	    (setq setupidcg (nth (+ pos1 1) islist))
+	    (setq pos1 (vl-position (strcat "IS-" targetid) islist))
+	    (setq targetidcg (nth (+ pos1 1) islist))
+
+	     (if (and (or (= distancetype " distanceType=\"AUSPOS\" ")
+		    (= distancetype " distanceType=\"Static GNSS\" ")
+		    (= distancetype " distanceType=\"RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS NRTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS RTK GNSS\" ")
+		    (= distancetype " distanceType=\"CORS Static GNSS\" "))
+		     (vl-position (strcat  setupidcg "-" targetidcg) gnssoblist))
+	       ();if its a GPS validaion obs and is GPS type ignore
+	      (progn;if its not a GPS validation obs
+	     
+
+	    
+	    (if  (or (= rolayer "Road")(= rolayer "Road Extent"))(progn
 				    (if (= (member (strcat bearing "~" dist "!" targetid) roadobs) nil)(progn
 				    
 	      (setq roadpoints (append roadpoints (list setupid)))
@@ -21042,9 +21266,11 @@
 	      ));p&if not already in list
 				    ));p&if connection layer
 	    
-	    
+	   
 	    
 	    (setq obscount (+ obscount 1))
+
+	     ));p&if its not a gnss validation obs
 
 
 	    	    ));pif line
@@ -21068,6 +21294,7 @@
 	    (setq stringpos (vl-string-search "targetSetupID" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 15)))
             (setq targetid (substr linetext (+ stringpos 16) (-(- wwpos 1)(+ stringpos 14))))
+	   
 	    
 	    (setq stringpos (vl-string-search "chordAzimuth" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 14)))
