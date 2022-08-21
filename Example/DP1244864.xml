@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<LandXML version="1.0" date="2020-09-21" time="06:32:58"
+<LandXML version="1.0" date="2022-08-21" time="15:25:51"
 xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.landxml.org/schema/LandXML-1.2 http://www.landxml.org/schema/LandXML-1.2/LandXML-1.2.xsd">
 <Units>
 <Metric linearUnit="meter" temperatureUnit="celsius" volumeUnit="cubicMeter" areaUnit="squareMeter" pressureUnit="milliBars" angularUnit="decimal dd.mm.ss" directionUnit="decimal dd.mm.ss" />
 </Units>
 <CoordinateSystem datum="MGA2020" horizontalDatum="Local" verticalDatum="AHD" />
 
-<Application name="Landxml for Autocad" version="1.13.11" >
+<Application name="Landxml for Autocad" version="1.15.6" >
 <Author createdBy="Lodged" />
 </Application>
 <FeatureDictionary name="xml-gov-au-nsw-icsm-eplan-cif-protocol" version="4.0"/>
@@ -405,31 +405,31 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
   <CgPoint state="proposed" pntSurv="reference" name="392">6270824.945866 304943.482482</CgPoint>
   <CgPoint state="proposed" pntSurv="reference" name="393">6270886.461561 305036.188202</CgPoint>
   <CgPoint state="proposed" pntSurv="reference" name="394">6270894.357214 305046.914343</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="395">6270928.939587 305148.792471</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="396">6270932.213716 305124.631431</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="397">6270816.460246 304938.811467</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="398">6270886.274798 304894.948833</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="399">6271002.463151 305079.941808</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="400">6271007.493506 305086.420136</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="401">6270937.242565 305053.686442</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="402">6270943.883983 305064.276138</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="403">6270949.203891 305072.743639</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="404">6270954.532268 305081.20582</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="405">6270959.847943 305089.675981</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="406">6270965.167852 305098.143481</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="407">6270970.500462 305106.603002</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="408">6270982.451147 305125.64326</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="409">6270954.308726 305143.296884</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="410">6270954.143483 305143.402154</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="411">6270837.068715 304956.368576</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="412">6270849.221751 304948.756762</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="413">6270859.803466 304942.102642</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="414">6270865.053317 304938.804298</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="415">6270871.683497 304949.347911</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="416">6270877.00764 304957.812752</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="417">6270882.319081 304966.285572</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="418">6270887.634757 304974.755732</CgPoint>
-  <CgPoint state="proposed" pntSurv="sideshot" name="419">6270892.963133 304983.217914</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="395">6270937.242565 305053.686442</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="396">6270943.883983 305064.276138</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="397">6270949.203891 305072.743639</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="398">6270954.532268 305081.20582</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="399">6270959.847943 305089.675981</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="400">6270965.167852 305098.143481</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="401">6270970.500462 305106.603002</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="402">6270982.451147 305125.64326</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="403">6270954.308726 305143.296884</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="404">6270954.143483 305143.402154</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="405">6270837.068715 304956.368576</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="406">6270849.221751 304948.756762</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="407">6270859.803466 304942.102642</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="408">6270865.053317 304938.804298</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="409">6270871.683497 304949.347911</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="410">6270877.00764 304957.812752</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="411">6270882.319081 304966.285572</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="412">6270887.634757 304974.755732</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="413">6270892.963133 304983.217914</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="414">6270928.939587 305148.792471</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="415">6270932.213716 305124.631431</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="416">6270816.460246 304938.811467</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="417">6270886.274798 304894.948833</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="418">6271002.463151 305079.941808</CgPoint>
+  <CgPoint state="proposed" pntSurv="sideshot" name="419">6271007.493506 305086.420136</CgPoint>
   <CgPoint state="proposed" pntSurv="sideshot" name="420">6270982.461785 305125.660196</CgPoint>
   <CgPoint state="proposed" pntSurv="sideshot" name="421">6270982.485017 305125.621981</CgPoint>
   <CgPoint state="proposed" pntSurv="sideshot" name="422">6270865.095655 304938.777699</CgPoint>
@@ -4075,7 +4075,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
   </Parcel>
 </Parcels>
 <PlanFeatures name="Occupation">
-  <PlanFeature name="Fence1" desc="NEW POST AND WIRE FENCE">
+  <PlanFeature name="Wall1" desc="CONCRETE BLOCK RETAINING WALL (0.35 WIDE)">
     <CoordGeom name="26">
       <Line>
         <Start pntRef="395"/>
@@ -4085,10 +4085,10 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
         <Start pntRef="396"/>
         <End pntRef="397"/>
       </Line>
-    </CoordGeom>
-  </PlanFeature>
-  <PlanFeature name="Fence2" desc="NEW POST AND WIRE FENCE">
-    <CoordGeom name="27">
+      <Line>
+        <Start pntRef="397"/>
+        <End pntRef="398"/>
+      </Line>
       <Line>
         <Start pntRef="398"/>
         <End pntRef="399"/>
@@ -4097,10 +4097,10 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
         <Start pntRef="399"/>
         <End pntRef="400"/>
       </Line>
-    </CoordGeom>
-  </PlanFeature>
-  <PlanFeature name="Wall1" desc="CONCRETE BLOCK RETAINING WALL (0.35 WIDE)">
-    <CoordGeom name="28">
+      <Line>
+        <Start pntRef="400"/>
+        <End pntRef="401"/>
+      </Line>
       <Line>
         <Start pntRef="401"/>
         <End pntRef="402"/>
@@ -4113,10 +4113,10 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
         <Start pntRef="403"/>
         <End pntRef="404"/>
       </Line>
-      <Line>
-        <Start pntRef="404"/>
-        <End pntRef="405"/>
-      </Line>
+    </CoordGeom>
+  </PlanFeature>
+  <PlanFeature name="Wall2" desc="CONCRETE BLOCK RETAINING WALL (0.35 WIDE)">
+    <CoordGeom name="27">
       <Line>
         <Start pntRef="405"/>
         <End pntRef="406"/>
@@ -4137,10 +4137,10 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
         <Start pntRef="409"/>
         <End pntRef="410"/>
       </Line>
-    </CoordGeom>
-  </PlanFeature>
-  <PlanFeature name="Wall2" desc="CONCRETE BLOCK RETAINING WALL (0.35 WIDE)">
-    <CoordGeom name="29">
+      <Line>
+        <Start pntRef="410"/>
+        <End pntRef="411"/>
+      </Line>
       <Line>
         <Start pntRef="411"/>
         <End pntRef="412"/>
@@ -4149,10 +4149,10 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
         <Start pntRef="412"/>
         <End pntRef="413"/>
       </Line>
-      <Line>
-        <Start pntRef="413"/>
-        <End pntRef="414"/>
-      </Line>
+    </CoordGeom>
+  </PlanFeature>
+  <PlanFeature name="Fence3" desc="NEW POST AND WIRE FENCE">
+    <CoordGeom name="28">
       <Line>
         <Start pntRef="414"/>
         <End pntRef="415"/>
@@ -4161,10 +4161,10 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
         <Start pntRef="415"/>
         <End pntRef="416"/>
       </Line>
-      <Line>
-        <Start pntRef="416"/>
-        <End pntRef="417"/>
-      </Line>
+    </CoordGeom>
+  </PlanFeature>
+  <PlanFeature name="Fence4" desc="NEW POST AND WIRE FENCE">
+    <CoordGeom name="29">
       <Line>
         <Start pntRef="417"/>
         <End pntRef="418"/>
@@ -4178,7 +4178,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.04)">
     <CoordGeom name="30">
       <Line>
-      <Start pntRef="409"/>
+      <Start pntRef="403"/>
       <End pntRef="34"/>
       </Line>
     </CoordGeom>
@@ -4186,7 +4186,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.02)">
     <CoordGeom name="31">
       <Line>
-      <Start pntRef="408"/>
+      <Start pntRef="402"/>
       <End pntRef="420"/>
       </Line>
     </CoordGeom>
@@ -4194,7 +4194,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.04)">
     <CoordGeom name="32">
       <Line>
-      <Start pntRef="408"/>
+      <Start pntRef="402"/>
       <End pntRef="421"/>
       </Line>
     </CoordGeom>
@@ -4202,7 +4202,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.03)">
     <CoordGeom name="33">
       <Line>
-      <Start pntRef="407"/>
+      <Start pntRef="401"/>
       <End pntRef="83"/>
       </Line>
     </CoordGeom>
@@ -4210,7 +4210,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.045)">
     <CoordGeom name="34">
       <Line>
-      <Start pntRef="406"/>
+      <Start pntRef="400"/>
       <End pntRef="82"/>
       </Line>
     </CoordGeom>
@@ -4218,7 +4218,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.045)">
     <CoordGeom name="35">
       <Line>
-      <Start pntRef="405"/>
+      <Start pntRef="399"/>
       <End pntRef="100"/>
       </Line>
     </CoordGeom>
@@ -4226,7 +4226,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.04)">
     <CoordGeom name="36">
       <Line>
-      <Start pntRef="404"/>
+      <Start pntRef="398"/>
       <End pntRef="81"/>
       </Line>
     </CoordGeom>
@@ -4234,7 +4234,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.05)">
     <CoordGeom name="37">
       <Line>
-      <Start pntRef="403"/>
+      <Start pntRef="397"/>
       <End pntRef="80"/>
       </Line>
     </CoordGeom>
@@ -4242,7 +4242,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.05)">
     <CoordGeom name="38">
       <Line>
-      <Start pntRef="402"/>
+      <Start pntRef="396"/>
       <End pntRef="98"/>
       </Line>
     </CoordGeom>
@@ -4250,7 +4250,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.04)">
     <CoordGeom name="39">
       <Line>
-      <Start pntRef="401"/>
+      <Start pntRef="395"/>
       <End pntRef="99"/>
       </Line>
     </CoordGeom>
@@ -4258,7 +4258,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.03)">
     <CoordGeom name="40">
       <Line>
-      <Start pntRef="411"/>
+      <Start pntRef="405"/>
       <End pntRef="20"/>
       </Line>
     </CoordGeom>
@@ -4266,7 +4266,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.05)">
     <CoordGeom name="41">
       <Line>
-      <Start pntRef="412"/>
+      <Start pntRef="406"/>
       <End pntRef="85"/>
       </Line>
     </CoordGeom>
@@ -4274,7 +4274,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.045)">
     <CoordGeom name="42">
       <Line>
-      <Start pntRef="413"/>
+      <Start pntRef="407"/>
       <End pntRef="96"/>
       </Line>
     </CoordGeom>
@@ -4282,7 +4282,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.05)">
     <CoordGeom name="43">
       <Line>
-      <Start pntRef="414"/>
+      <Start pntRef="408"/>
       <End pntRef="422"/>
       </Line>
     </CoordGeom>
@@ -4290,7 +4290,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.045)">
     <CoordGeom name="44">
       <Line>
-      <Start pntRef="415"/>
+      <Start pntRef="409"/>
       <End pntRef="89"/>
       </Line>
     </CoordGeom>
@@ -4298,7 +4298,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.04)">
     <CoordGeom name="45">
       <Line>
-      <Start pntRef="416"/>
+      <Start pntRef="410"/>
       <End pntRef="88"/>
       </Line>
     </CoordGeom>
@@ -4306,7 +4306,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.05)">
     <CoordGeom name="46">
       <Line>
-      <Start pntRef="417"/>
+      <Start pntRef="411"/>
       <End pntRef="95"/>
       </Line>
     </CoordGeom>
@@ -4314,7 +4314,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.055)">
     <CoordGeom name="47">
       <Line>
-      <Start pntRef="418"/>
+      <Start pntRef="412"/>
       <End pntRef="91"/>
       </Line>
     </CoordGeom>
@@ -4322,7 +4322,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.045)">
     <CoordGeom name="48">
       <Line>
-      <Start pntRef="419"/>
+      <Start pntRef="413"/>
       <End pntRef="90"/>
       </Line>
     </CoordGeom>
@@ -4330,7 +4330,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.95)">
     <CoordGeom name="49">
       <Line>
-      <Start pntRef="396"/>
+      <Start pntRef="415"/>
       <End pntRef="423"/>
       </Line>
     </CoordGeom>
@@ -4338,7 +4338,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.11)">
     <CoordGeom name="50">
       <Line>
-      <Start pntRef="397"/>
+      <Start pntRef="416"/>
       <End pntRef="17"/>
       </Line>
     </CoordGeom>
@@ -4346,7 +4346,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.13)">
     <CoordGeom name="51">
       <Line>
-      <Start pntRef="399"/>
+      <Start pntRef="418"/>
       <End pntRef="424"/>
       </Line>
     </CoordGeom>
@@ -4354,7 +4354,7 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
 <PlanFeature name="Offset" desc="(0.16)">
     <CoordGeom name="52">
       <Line>
-      <Start pntRef="398"/>
+      <Start pntRef="417"/>
       <End pntRef="425"/>
       </Line>
     </CoordGeom>
@@ -5730,49 +5730,51 @@ xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2
   <ReducedObservation name="410" desc="Connection" setupID="IS117" targetSetupID="IS148" azimuth="327.5156" horizDistance="244.9" distanceType="Measured" />
   <ReducedObservation name="411" desc="Connection" setupID="IS60" targetSetupID="IS46" azimuth="53.3305" horizDistance="16" distanceType="Measured" />
   <ReducedObservation name="412" desc="Connection" setupID="IS43" targetSetupID="IS63" azimuth="64.4440" horizDistance="16" distanceType="Measured" />
-  <ReducedObservation name="413" desc="Connection" setupID="IS362" targetSetupID="IS120" azimuth="144.0130" horizDistance="9"/>
-  <ReducedObservation name="414" desc="Connection" setupID="IS362" targetSetupID="IS357" azimuth="147.5102" horizDistance="818.148" distanceAdoptionFactor="1.000056"/>
-  <ReducedObservation name="415" desc="Connection" setupID="IS363" targetSetupID="IS362" azimuth="329.3556" horizDistance="526.305" distanceAdoptionFactor="1.000056"/>
-  <ReducedObservation name="416" desc="Connection" setupID="IS363" targetSetupID="IS17" azimuth="356.3325" horizDistance="34.503"/>
-  <ReducedObservation name="417" desc="Connection" setupID="IS363" targetSetupID="IS360" azimuth="359.0558" horizDistance="40.81" distanceAdoptionFactor="1.000056"/>
-  <ReducedObservation name="418" desc="Connection" setupID="IS362" targetSetupID="IS361" azimuth="147.1542" horizDistance="418.227" distanceAdoptionFactor="1.000056"/>
-  <ReducedObservation name="419" desc="Connection" setupID="IS114" targetSetupID="IS357" azimuth="327.0230" horizDistance="32.35"/>
-  <ReducedObservation name="420" desc="Connection" setupID="IS357" targetSetupID="IS363" azimuth="324.4216" horizDistance="292.529" distanceAdoptionFactor="1.000056"/>
-  <ReducedObservation name="421" desc="Connection" setupID="IS359" targetSetupID="IS358" azimuth="314.3030" horizDistance="71.152" distanceAdoptionFactor="1.000056"/>
-  <ReducedObservation name="422" desc="Connection" setupID="IS359" targetSetupID="IS28" azimuth="42.2355" horizDistance="5.306"/>
-  <ReducedObservation name="423" desc="Connection" setupID="IS361" targetSetupID="IS360" azimuth="147.1236" horizDistance="72.97" distanceAdoptionFactor="1.000056"/>
-  <ReducedObservation name="424" desc="Connection" setupID="IS358" targetSetupID="IS361" azimuth="238.4447" horizDistance="114.966" distanceAdoptionFactor="1.000056"/>
-  <ReducedObservation name="425" desc="Connection" setupID="IS359" targetSetupID="IS360" azimuth="237.0003" horizDistance="130.57" distanceType="Measured" distanceAdoptionFactor="1.000056" />
-  <ReducedObservation name="426" desc="Reference" setupID="IS365" targetSetupID="IS60" azimuth="223.1530" horizDistance="3.05" distanceAccClass="Placed" />
-  <ReducedObservation name="427" desc="Reference" setupID="IS366" targetSetupID="IS60" azimuth="232.4940" horizDistance="12.135" distanceAccClass="Placed" />
-  <ReducedObservation name="428" desc="Reference" setupID="IS367" targetSetupID="IS43" azimuth="254.58" horizDistance="3.41" distanceAccClass="Placed" />
-  <ReducedObservation name="429" desc="Reference" setupID="IS368" targetSetupID="IS43" azimuth="244.48" horizDistance="12.12" distanceAccClass="Placed" />
-  <ReducedObservation name="430" desc="Reference" setupID="IS369" targetSetupID="IS111" azimuth="147.5129" horizDistance="0.457" adoptedDistanceSurvey="DP208203"  distanceAccClass="Found" />
-  <ReducedObservation name="431" desc="Reference" setupID="IS370" targetSetupID="IS51" azimuth="237.4320" horizDistance="5.8" distanceAccClass="Placed" />
-  <ReducedObservation name="432" desc="Reference" setupID="IS371" targetSetupID="IS364" azimuth="237.5148" horizDistance="0.457" adoptedDistanceSurvey="DP208203"  distanceAccClass="Found" />
-  <ReducedObservation name="433" desc="Reference" setupID="IS372" targetSetupID="IS105" azimuth="237.5148" horizDistance="0.457" adoptedDistanceSurvey="DP208203"  distanceAccClass="Found" />
-  <ReducedObservation name="434" desc="Reference" setupID="IS373" targetSetupID="IS51" azimuth="237.0530" horizDistance="18.605" distanceAccClass="Placed" />
-  <ReducedObservation name="435" desc="Reference" setupID="IS374" targetSetupID="IS57" azimuth="129.3120" horizDistance="16.63" adoptedDistanceSurvey="DP1230344"  distanceAccClass="Found" />
-  <ReducedObservation name="436" desc="Reference" setupID="IS375" targetSetupID="IS55" azimuth="229.13" horizDistance="22.745" distanceAccClass="Placed" />
-  <ReducedObservation name="437" desc="Reference" setupID="IS376" targetSetupID="IS112" azimuth="147.5129" horizDistance="0.455" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
-  <ReducedObservation name="438" desc="Reference" setupID="IS377" targetSetupID="IS55" azimuth="200.4412" horizDistance="5.635" distanceAccClass="Placed" />
-  <ReducedObservation name="439" desc="Reference" setupID="IS378" targetSetupID="IS134" azimuth="57.5136" horizDistance="0.457" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
-  <ReducedObservation name="440" desc="Reference" setupID="IS379" targetSetupID="IS120" azimuth="57.5136" horizDistance="0.457" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
-  <ReducedObservation name="441" desc="Reference" setupID="IS380" targetSetupID="IS122" azimuth="147.5222" horizDistance="0.455" adoptedDistanceSurvey="DP208203"  distanceAccClass="Found" />
-  <ReducedObservation name="442" desc="Reference" setupID="IS381" targetSetupID="IS114" azimuth="57.5136" horizDistance="0.457" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
-  <ReducedObservation name="443" desc="Reference" setupID="IS382" targetSetupID="IS123" azimuth="147.5222" horizDistance="0.457" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
-  <ReducedObservation name="444" desc="Reference" setupID="IS383" targetSetupID="IS126" azimuth="327.5156" horizDistance="0.864" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
-  <ReducedObservation name="445" desc="Reference" setupID="IS384" targetSetupID="IS58" azimuth="313.4200" horizDistance="1.77" adoptedDistanceSurvey="DP1230344"  distanceAccClass="Found" />
-  <ReducedObservation name="446" desc="Reference" setupID="IS385" targetSetupID="IS16" azimuth="287.0600" horizDistance="3.825" adoptedDistanceSurvey="DP1230344"  distanceAccClass="Found" />
-  <ReducedObservation name="447" desc="Reference" setupID="IS386" targetSetupID="IS15" azimuth="66.3855" horizDistance="22.265" distanceAccClass="Placed" />
-  <ReducedObservation name="448" desc="Reference" setupID="IS387" targetSetupID="IS15" azimuth="107.3425" horizDistance="4.455" distanceAccClass="Placed" />
-  <ReducedObservation name="449" desc="Reference" setupID="IS388" targetSetupID="IS33" azimuth="50.2430" horizDistance="26.055" distanceAccClass="Placed" />
-  <ReducedObservation name="450" desc="Reference" setupID="IS389" targetSetupID="IS33" azimuth="47.5210" horizDistance="19.495" distanceAccClass="Placed" />
-  <ReducedObservation name="451" desc="Reference" setupID="IS390" targetSetupID="IS19" azimuth="244.2535" horizDistance="27.07" distanceAccClass="Placed" />
-  <ReducedObservation name="452" desc="Reference" setupID="IS391" targetSetupID="IS17" azimuth="57.5136" horizDistance="1.844" adoptedDistanceSurvey="DP1227865"  distanceAccClass="Found" />
-  <ReducedObservation name="453" desc="Reference" setupID="IS392" targetSetupID="IS19" azimuth="282.2145" horizDistance="4.865" distanceAccClass="Placed" />
-  <ReducedObservation name="454" desc="Reference" setupID="IS393" targetSetupID="IS27" azimuth="244.3145" horizDistance="5.51" distanceAccClass="Placed" />
-  <ReducedObservation name="455" desc="Reference" setupID="IS394" targetSetupID="IS27" azimuth="236.4920" horizDistance="18.76" distanceAccClass="Placed" />
+  <ReducedObservation name="413" desc="Connection" setupID="IS363" targetSetupID="IS362" azimuth="329.3556" azimuthType="Static GNSS" horizDistance="526.310" distanceType="Static GNSS"><FieldNote>"  Static GNSS"</FieldNote></ReducedObservation>
+  <ReducedObservation name="414" desc="Connection" setupID="IS357" targetSetupID="IS363" azimuth="324.4213" azimuthType="Static GNSS" horizDistance="292.531" distanceType="Static GNSS"/>
+  <ReducedObservation name="415" desc="Connection" setupID="IS362" targetSetupID="IS120" azimuth="144.0130" horizDistance="9"/>
+  <ReducedObservation name="416" desc="Connection" setupID="IS362" targetSetupID="IS357" azimuth="147.5102" horizDistance="818.148" distanceAdoptionFactor="1.000056"/>
+  <ReducedObservation name="417" desc="Connection" setupID="IS363" targetSetupID="IS362" azimuth="329.3556" horizDistance="526.305" distanceAdoptionFactor="1.000056"/>
+  <ReducedObservation name="418" desc="Connection" setupID="IS363" targetSetupID="IS17" azimuth="356.3325" horizDistance="34.503"/>
+  <ReducedObservation name="419" desc="Connection" setupID="IS363" targetSetupID="IS360" azimuth="359.0558" horizDistance="40.81" distanceAdoptionFactor="1.000056"/>
+  <ReducedObservation name="420" desc="Connection" setupID="IS362" targetSetupID="IS361" azimuth="147.1542" horizDistance="418.227" distanceAdoptionFactor="1.000056"/>
+  <ReducedObservation name="421" desc="Connection" setupID="IS114" targetSetupID="IS357" azimuth="327.0230" horizDistance="32.35"/>
+  <ReducedObservation name="422" desc="Connection" setupID="IS357" targetSetupID="IS363" azimuth="324.4216" horizDistance="292.529" distanceAdoptionFactor="1.000056"/>
+  <ReducedObservation name="423" desc="Connection" setupID="IS359" targetSetupID="IS358" azimuth="314.3030" horizDistance="71.152" distanceAdoptionFactor="1.000056"/>
+  <ReducedObservation name="424" desc="Connection" setupID="IS359" targetSetupID="IS28" azimuth="42.2355" horizDistance="5.306"/>
+  <ReducedObservation name="425" desc="Connection" setupID="IS361" targetSetupID="IS360" azimuth="147.1236" horizDistance="72.97" distanceAdoptionFactor="1.000056"/>
+  <ReducedObservation name="426" desc="Connection" setupID="IS358" targetSetupID="IS361" azimuth="238.4447" horizDistance="114.966" distanceAdoptionFactor="1.000056"/>
+  <ReducedObservation name="427" desc="Connection" setupID="IS359" targetSetupID="IS360" azimuth="237.0003" horizDistance="130.57" distanceType="Measured" distanceAdoptionFactor="1.000056" />
+  <ReducedObservation name="428" desc="Reference" setupID="IS365" targetSetupID="IS60" azimuth="223.1530" horizDistance="3.05" distanceAccClass="Placed" />
+  <ReducedObservation name="429" desc="Reference" setupID="IS366" targetSetupID="IS60" azimuth="232.4940" horizDistance="12.135" distanceAccClass="Placed" />
+  <ReducedObservation name="430" desc="Reference" setupID="IS367" targetSetupID="IS43" azimuth="254.58" horizDistance="3.41" distanceAccClass="Placed" />
+  <ReducedObservation name="431" desc="Reference" setupID="IS368" targetSetupID="IS43" azimuth="244.48" horizDistance="12.12" distanceAccClass="Placed" />
+  <ReducedObservation name="432" desc="Reference" setupID="IS369" targetSetupID="IS111" azimuth="147.5129" horizDistance="0.457" adoptedDistanceSurvey="DP208203"  distanceAccClass="Found" />
+  <ReducedObservation name="433" desc="Reference" setupID="IS370" targetSetupID="IS51" azimuth="237.4320" horizDistance="5.8" distanceAccClass="Placed" />
+  <ReducedObservation name="434" desc="Reference" setupID="IS371" targetSetupID="IS364" azimuth="237.5148" horizDistance="0.457" adoptedDistanceSurvey="DP208203"  distanceAccClass="Found" />
+  <ReducedObservation name="435" desc="Reference" setupID="IS372" targetSetupID="IS105" azimuth="237.5148" horizDistance="0.457" adoptedDistanceSurvey="DP208203"  distanceAccClass="Found" />
+  <ReducedObservation name="436" desc="Reference" setupID="IS373" targetSetupID="IS51" azimuth="237.0530" horizDistance="18.605" distanceAccClass="Placed" />
+  <ReducedObservation name="437" desc="Reference" setupID="IS374" targetSetupID="IS57" azimuth="129.3120" horizDistance="16.63" adoptedDistanceSurvey="DP1230344"  distanceAccClass="Found" />
+  <ReducedObservation name="438" desc="Reference" setupID="IS375" targetSetupID="IS55" azimuth="229.13" horizDistance="22.745" distanceAccClass="Placed" />
+  <ReducedObservation name="439" desc="Reference" setupID="IS376" targetSetupID="IS112" azimuth="147.5129" horizDistance="0.455" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
+  <ReducedObservation name="440" desc="Reference" setupID="IS377" targetSetupID="IS55" azimuth="200.4412" horizDistance="5.635" distanceAccClass="Placed" />
+  <ReducedObservation name="441" desc="Reference" setupID="IS378" targetSetupID="IS134" azimuth="57.5136" horizDistance="0.457" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
+  <ReducedObservation name="442" desc="Reference" setupID="IS379" targetSetupID="IS120" azimuth="57.5136" horizDistance="0.457" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
+  <ReducedObservation name="443" desc="Reference" setupID="IS380" targetSetupID="IS122" azimuth="147.5222" horizDistance="0.455" adoptedDistanceSurvey="DP208203"  distanceAccClass="Found" />
+  <ReducedObservation name="444" desc="Reference" setupID="IS381" targetSetupID="IS114" azimuth="57.5136" horizDistance="0.457" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
+  <ReducedObservation name="445" desc="Reference" setupID="IS382" targetSetupID="IS123" azimuth="147.5222" horizDistance="0.457" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
+  <ReducedObservation name="446" desc="Reference" setupID="IS383" targetSetupID="IS126" azimuth="327.5156" horizDistance="0.864" adoptedDistanceSurvey="DP30186"  distanceAccClass="Found" />
+  <ReducedObservation name="447" desc="Reference" setupID="IS384" targetSetupID="IS58" azimuth="313.4200" horizDistance="1.77" adoptedDistanceSurvey="DP1230344"  distanceAccClass="Found" />
+  <ReducedObservation name="448" desc="Reference" setupID="IS385" targetSetupID="IS16" azimuth="287.0600" horizDistance="3.825" adoptedDistanceSurvey="DP1230344"  distanceAccClass="Found" />
+  <ReducedObservation name="449" desc="Reference" setupID="IS386" targetSetupID="IS15" azimuth="66.3855" horizDistance="22.265" distanceAccClass="Placed" />
+  <ReducedObservation name="450" desc="Reference" setupID="IS387" targetSetupID="IS15" azimuth="107.3425" horizDistance="4.455" distanceAccClass="Placed" />
+  <ReducedObservation name="451" desc="Reference" setupID="IS388" targetSetupID="IS33" azimuth="50.2430" horizDistance="26.055" distanceAccClass="Placed" />
+  <ReducedObservation name="452" desc="Reference" setupID="IS389" targetSetupID="IS33" azimuth="47.5210" horizDistance="19.495" distanceAccClass="Placed" />
+  <ReducedObservation name="453" desc="Reference" setupID="IS390" targetSetupID="IS19" azimuth="244.2535" horizDistance="27.07" distanceAccClass="Placed" />
+  <ReducedObservation name="454" desc="Reference" setupID="IS391" targetSetupID="IS17" azimuth="57.5136" horizDistance="1.844" adoptedDistanceSurvey="DP1227865"  distanceAccClass="Found" />
+  <ReducedObservation name="455" desc="Reference" setupID="IS392" targetSetupID="IS19" azimuth="282.2145" horizDistance="4.865" distanceAccClass="Placed" />
+  <ReducedObservation name="456" desc="Reference" setupID="IS393" targetSetupID="IS27" azimuth="244.3145" horizDistance="5.51" distanceAccClass="Placed" />
+  <ReducedObservation name="457" desc="Reference" setupID="IS394" targetSetupID="IS27" azimuth="236.4920" horizDistance="18.76" distanceAccClass="Placed" />
 </ObservationGroup>
 </Survey>
 <Monuments>
