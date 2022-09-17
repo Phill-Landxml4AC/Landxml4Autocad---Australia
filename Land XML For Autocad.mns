@@ -40,7 +40,7 @@
 [Assign arc to XML (Compiled) (XAAC)]^C^CXAAC
 [Assign arc to XML (GNSS) (XAAG)]^C^CXAAG
 [Assign arc to XML (Compiled with note) (XAACN)]^C^CXAACN
-[Assign arc to XML (GNSS with note) (XAACN)]^C^CXAAGN
+[Assign arc to XML (GNSS with note) (XAAGN)]^C^CXAAGN
 [Assign Polyline (Lot) to XML (XAP)]^C^CXAP
 [Assign Polyline (Easement) to XML (XAE)]^C^CXAE
 [Assign Polyline (New Road) to XML (XAR)]^C^CXAR
@@ -63,6 +63,7 @@
 [->DRAFTING]
 [Create Short line Table (XSL)]^c^cXSL
 [Create Short Arc Table (XSC)]^C^CXSC
+[Offset line (XOS)]^C^CXOS
 [Swap text positions (XSW)]^C^CXSW
 [Spin text 180° (XSP)]^C^CXSP
 [Create Brackets around text (XCB)]^C^CXCB

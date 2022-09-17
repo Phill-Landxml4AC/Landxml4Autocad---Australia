@@ -243,8 +243,12 @@
 ;Revision1.15.6 -Annotation scale 1:1 added for custom templates where it doesn't exist (found by Michael Vincent)
 ;Revision1.16   -Added XALG, XALNG, XAAG, XAANG and XGV for GNSS observations and updated xin to create GNSS schedule (requested by Michael Vincent)
 ;               -Fixed problem with areas on XIN
+;Revision1.17   -Fixed problem with all lines turning green on XAL and XAA and compounding notes
+;               -Changed datum prompt on XAS
+;               -Added XOS
 
-(setq version "1.16")
+
+(setq version "1.17")
 
 (REGAPP "LANDXML")
 
@@ -455,6 +459,7 @@
 (princ "\n ")
 (princ "\nXSL - Assign lines to Short Line Table")
 (princ "\nXSC - Assign arcs to Short Line Table")
+(princ "\nXOS - Offset line")
 (princ "\nXSW - Swap text positions")
 (princ "\nXSP - Spin text 180°")
 (princ "\nXCB - Create Brackets around text")
@@ -6044,7 +6049,7 @@
   (if (= jur "")(setq jur "New South Wales"))
   
   (setq parcelnotes (getstring T "\nParcel Notes:" ))
-  (setq azdatum (getstring T "\nAzimuth Datum (MGA,ISG,MM,Local,TM (* for list):" ))
+  (setq azdatum (getstring T "\nAzimuth Datum (MGA2020,MGA94,ISG,MM,Local,TM (* for list):" ))
    (if (= azdatum "*")
     (progn
 		      (setq workingselnum "2")
@@ -6408,6 +6413,8 @@
 (SETQ COMMENT "")
  (SETQ LINES (SSGET  '((0 . "LINE"))))
 
+  
+
   (SETQ COUNT 0)
 (REPEAT (SSLENGTH LINES)
 (SETQ P1 (CDR(ASSOC 10 (ENTGET (SSNAME LINES COUNT)))))
@@ -6573,8 +6580,8 @@
   ));PELSE&IF
 
   (if (= mandist 1)(setq ldist (getstring "\nManual Distance:")))
-
-  (if ( = notereq 1) (setq comment ( getstring T "\nGeometry Note:")))
+(if ( = notereq 1) (setq comment ( getstring T "\nGeometry Note:"))(setq comment ""))
+  
 
   (if (= compile 0)(setq distx (strcat "\" horizDistance=\"" ldist "\" distanceType=\"Measured\"")
 			 azimuthx (strcat "azimuth=\"" lbearing)))
@@ -6596,7 +6603,7 @@
   (COMMAND "ERASE" EN "")
   (SETVAR "CLAYER" layer)
   (COMMAND "LINE" (trans P1 0 1)(trans P2 0 1) "")
-  (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+  (IF (= compile 10)(COMMAND "CHANGE" "LAST" "" "P" "C" "94" ""))
     
 (SETQ BDINFO (STRCAT azimuthx distx ocomment))
   (SETQ SENT (ENTLAST))
@@ -6934,12 +6941,12 @@
   (COMMAND "ERASE" EN "")
   (SETVAR "CLAYER" layer)
   (COMMAND "ARC" "c" (TRANS CP 0 1) (TRANS P1 0 1) (TRANS P2 0 1 ))
-  (COMMAND "CHANGE" "LAST" "" "P" "C" "94" "")
+  (IF (= compile 10)(COMMAND "CHANGE" "LAST" "" "P" "C" "94" ""))
 
   (if (= mandist 1)(setq arclength (getstring "\nManual Chord Distance:")))
   (if (= mandist 1)(setq radius (getstring "\nManual Radius:")))
 
-  (if ( = notereq 1) (setq comment ( getstring T "\nGeometry Note:")))
+  (if ( = notereq 1) (setq comment ( getstring T "\nGeometry Note:"))(setq comment ""))
 
   (if (= compile 0)(setq distx (strcat "\" length=\"" arclength "\" arcType=\"Measured\"")
 			 azimuthx (strcat "chordAzimuth=\"" lbearing)))
@@ -10243,14 +10250,14 @@
     (SETQ DPOS (POLAR MP (- ANG (* 0.5 PI)) TH))
     (if (or (= compile 0) (= cbrq "Y") (/= bearing ""))(SETQ BTS (vl-string-subst  "°" "d" bearing)));if not compile
 
-  (if (/= comment "")(setq comment (strcat " "comment)))
+  (if (/= comment "")(setq wcomment (strcat " "comment))(setq wcomment ""))
 
   (setq prevlayer (getvar "CLAYER"))
   (SETVAR "CLAYER"  "Drafting" )
   
   (if (or (= compile 0) (= cbrq "Y") (/= bearing ""))    (COMMAND "TEXT" "J" "MC" BPOS TH (ANGTOS ANG 1 4) BTS));if not compile label bearing
 
-   (if (/= ldist "") (COMMAND "TEXT" "J" "MC" DPOS TH (ANGTOS ANG 1 4) (strcat ldist (strcase comment))))
+   (if (/= ldist "") (COMMAND "TEXT" "J" "MC" DPOS TH (ANGTOS ANG 1 4) (strcat ldist (strcase wcomment))))
 
   
   (if ( = labelyeolddist 1)(progn
@@ -10315,16 +10322,16 @@
  
     (SETQ BTS (vl-string-subst  "°" "d" bearing))
 
-  (if (/= comment "")(setq comment (strcat " " comment)))
+  (if (/= comment "")(setq wcomment (strcat " " comment))(setq wcomment ""))
   
   (setq prevlayer (getvar "CLAYER"))
   (SETVAR "CLAYER" "Drafting")
    (if (or (= compile 0) (= cbrq "Y") (/= bearing ""))    (COMMAND "TEXT" "J" "MC" BPOS TH (ANGTOS ANG 1 4) BTS));if not compile label bearing
-   (if (or (= compile 0) (= cbrq "Y") (/= bearing ""))    (COMMAND "TEXT" "J" "MC" DPOS TH (ANGTOS ANG 1 4) (strcat "CH" ldist (strcase comment))))
+   (if (or (= compile 0) (= cbrq "Y") (/= bearing ""))    (COMMAND "TEXT" "J" "MC" DPOS TH (ANGTOS ANG 1 4) (strcat "CH" ldist (strcase wcomment))))
 
   (if (or (= compile 2) (= cbrq "N"))(setq APOS BPOS
 					RPOS DPOS));move position for strata or bearingless compile
-  (IF (and (or (= compile 2) (= cbrq "N"))(/= comment ""))(setq arclength (strcat arclength (strcase comment))))
+  (IF (and (or (= compile 2) (= cbrq "N"))(/= comment ""))(setq arclength (strcat arclength (strcase wcomment))))
   
   
     (COMMAND "TEXT" "J" "MC" APOS TH (ANGTOS ANG 1 4) (strcat "ARC" arclength))
@@ -23454,6 +23461,85 @@
      (SETVAR "CLAYER"  prevlayer )
 (CLOSE outfile)
 )
+
+
+(DEFUN C:XOS (/)
+
+          (setq dist (getstring T (strcat "\nDistance[Meters/Feet/Links]" units ":")))
+
+  (if (or (= dist "f") (= dist "F") (= dist "Feet") (= dist "feet") (= dist "FEET"))
+    (progn
+      (setq dist (getstring T "\nDistance(Feet FF.II.n/d ): "))
+      (setq units "F")
+      )
+    )
+  
+   
+
+  (if (or (= dist "l") (= dist "L") (= dist "Links") (= dist "LINKS") (= DIST "links"))
+    (progn
+      (setq dist (getstring T "\nDistance(Links): "))
+      (setq units "L")
+      )
+    )
+
+    (if (or (= dist "m") (= dist "M") (= dist "Meters") (= dist "meters") (= DIST "METERS"))
+    (progn
+      (setq dist (getstring T "\nDistance(Meters): "))
+      (setq units "M")
+      )
+    )
+  (setq prevdist dist)
+ 
+  
+    (if (= units "F")
+      (progn
+	 (setq dotpos1 (vl-string-position 46 dist 0)) 
+		    
+	(if (= dotpos1 nil)(setq dotpos2 nil)(setq dotpos2 (vl-string-position 46 dist (+ dotpos1 1))))
+	(setq /pos1 (vl-string-position 47 dist 0))
+	(if (/= /pos1 nil)
+	  (progn
+	    (setq den (substr dist ( + /pos1 2) 50))
+	    (setq num (substr dist ( + dotpos2 2) (- (- /pos1 dotpos2) 1)))
+	    (setq idist (/ (atof num) (atof den)))
+	    (setq inches (substr dist (+ dotpos1 2) (- (- dotpos2 dotpos1) 1)))
+	    (setq idist (+ idist (atof inches)))
+	    (setq feet (substr dist 1  dotpos1 ))
+	    (setq idist (+ idist (* (atof feet) 12)))
+	    (setq dist (rtos (* idist 0.0254) 2 9))
+	    )
+	  )
+	(if (and (/= dotpos1 nil) (= /pos1 nil))
+	  (progn
+	    (setq inches (substr dist ( + dotpos1 2) 50))
+	    (setq feet (substr dist 1  dotpos1 ))
+	    (setq idist  (atof inches))
+	    (setq idist (+ idist (* (atof feet) 12)))
+	    (setq dist (rtos (* idist 0.0254) 2 9))
+	    )
+	  )
+	(if (and (= dotpos1 nil) (= /pos1 nil) (= dotpos2 nil))
+	  (progn
+	   
+	    (setq feet (substr dist 1  50))
+	    (setq idist (* (atof feet) 12))
+	    (setq dist (rtos (* idist 0.0254) 2 9))
+	    )
+	  )
+      )
+    )
+  (if (= units "L")
+    (progn
+      (setq dist (atof dist))
+      (setq dist (rtos (* dist 0.201168)))
+      )
+    )
+
+   (COMMAND "OFFSET" DIST)
+
+
+  )
 
 
 
