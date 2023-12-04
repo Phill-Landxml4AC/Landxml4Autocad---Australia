@@ -249,13 +249,14 @@
 ;Revision1.17.1 -More rigorous checking of inputs in XPM and XAS added
 ;               -Added additional IS with suffix V on GNSS validation lines
 ;Revision1.18   -Created internal linetype, menu and dcl file thanks to Daniel Vonks awesome code
-;               -Fixed problem with PM's that were neither control or refernce (randomly connected to)
+;               -Fixed problem with PM's that were neither control or reference (randomly connected to)
 ;               -Fixed problem with part areas of 0 (found by James Lillyman)
 ;Revision1.18.1 -Fixed problem with linetype loaded when lisp previosuly loaded into drawing
+;Revision1.18.2 -Fixed XMO counter
 
 
 
-(setq version "1.18.1")
+(setq version "1.18.2")
 
 (REGAPP "LANDXML")
 
@@ -5927,6 +5928,7 @@
     )
 
 		 (SETVAR "CLAYER"  "Drafting" )
+  (SETVAR "CELWEIGHT" 50)	
       (if (and (/= ab "A")(/= ab "B")(/= height 0)(= stratalevel "N"))
   		 (progn;stratum datum point
 			 (COMMAND "TEXT" "J" "BR"  TEXTPOS (* TH 1.4) "90"  ab )
@@ -5934,6 +5936,7 @@
 			 );P
 	       (COMMAND "TEXT" "J" "BR"  TEXTPOS (* TH 2) "90"  ab );normal datum point
 		       );IF SPCPOS2 NIL
+  (SETVAR "CELWEIGHT" -1)	
   
 	
   
@@ -23388,8 +23391,11 @@
 			 (COMMAND "TEXT" "J" "BR"  TEXTPOS (* TH 1.4) "90"  ab )
 			 (COMMAND "TEXT" "J" "BL"  dppos (* TH 1) "45" (rtos  height 2 3))
 			 );P
+	(progn
+	(SETVAR "CELWEIGHT" 50)
 	       (COMMAND "TEXT" "J" "BR"  TEXTPOS (* TH 2) "90"  (STRCAT "'" ab "'") );normal datum point
-		       );IF SPCPOS2 NIL
+	(SETVAR "CELWEIGHT" -1)
+		       ));IF SPCPOS2 NIL
   
   (setvar "clayer" prevlayer)
   
@@ -23457,7 +23463,7 @@
       )
     (PROGN ;ELSE PM
       
-
+(SETVAR "CELWEIGHT" 50)
 (SETQ TEXTPOS (LIST (+ (CAR PMPOS) TH) (+ (CADR PMPOS) (* 0.5 TH))))
  
  (IF (= pmstate "Found")  (SETQ PMNUMS (STRCAT PMNUM " FD")))
@@ -23465,7 +23471,11 @@
 		 (COMMAND "TEXT" "J" "BL"  TEXTPOS (* TH 1.4) "90" PMNUMS)
   (SETQ TEXTPOS (LIST (+ (CAR PMPOS) TH) (+ (CADR PMPOS) (* -1.25 TH))))
   (IF (and (/= pmclass "U") (or (= pmsource "SCIMS" )(= pmsource "From SCIMS")))(COMMAND "TEXT" "J" "BL"  TEXTPOS (* TH 1.4) "90" "(EST)"))
-  ))
+
+(SETVAR "CELWEIGHT" -1)
+
+))
+      
 
       
   ))      
@@ -23894,7 +23904,7 @@
 
     (command "text" p1 "0.5" "90" (rtos PTNUM 2 0))
 
-    (setq pmnum (+ ptnum 1))
+    (setq ptnum (+ ptnum 1))
     ))
 
     (if (= layer "PM")
@@ -23927,8 +23937,7 @@
      (WRITE-LINE (strcat  pmnum  "," (rtos (car p1) 2 3) "," (rtos (cadr p1) 2 3) "," (rtos (caddr p1) 2 3) "," ormtype "-" pmstate "-"  "-"  "-" "-" refplan ) outfile)
 
 ))
-      
-       
+    
   
     (setq count (+ count 1))
     
