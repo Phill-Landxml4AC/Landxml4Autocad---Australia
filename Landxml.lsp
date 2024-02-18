@@ -253,10 +253,14 @@
 ;               -Fixed problem with part areas of 0 (found by James Lillyman)
 ;Revision1.18.1 -Fixed problem with linetype loaded when lisp previosuly loaded into drawing
 ;Revision1.18.2 -Fixed XMO counter
+;Revision1.18.3 -Added loop distance, counter and misclose reporting to XINO
+;               -Now able to deal with non-schema desc's on Reduced observations
+;               -xin and xino now remember folder location
+;               -option to enter arc distance in XTA
 
 
 
-(setq version "1.18.2")
+(setq version "1.18.3")
 
 (REGAPP "LANDXML")
 
@@ -666,7 +670,7 @@
 (if (= lrmrefdp nil)(setq lrmrefdp ""))
 (if ( = ped nil)(setq ped ""))
 (setq phdt "Differential Levelling")
-
+(setq folderloc "")
 
 
 
@@ -1614,7 +1618,7 @@
     
     (setq p1 (getpoint "\nEnter start coords: "))
     (setq bearing (getstring "\nChord Bearing(DD.MMSS): "))
-        (setq dist (getstring T (strcat "\nChord Distance[Meters/Feet/Links]" units ":")))
+ (setq dist (getstring T (strcat "\nChord Distance[Meters/Feet/DecimalFeet/Links/ArcDistance]" units ":")))
 
   (if (or (= dist "f") (= dist "F") (= dist "Feet") (= dist "feet") (= dist "FEET"))
     (progn
@@ -1636,6 +1640,56 @@
       (setq units "M")
       )
     )
+
+
+  ;ARC DISTANCE
+  (if (or (= dist "a") (= dist "A") (= dist "ArcDistance") (= dist "arcdistance") (= DIST "ARCDISTANCE"))
+    (progn
+
+      (setq dist (getstring T (strcat "\nArc Distance[Meters/Feet/DecimalFeet/Links/ArcDistance]" units ":")))
+
+  (if (or (= dist "f") (= dist "F") (= dist "Feet") (= dist "feet") (= dist "FEET"))
+    (progn
+      (setq dist (getstring T "\nDistance(Feet FF.II.n/d ): "))
+      (setq units "F")
+      )
+    )
+  
+   (if (or (= dist "d")(= dist "df")(= dist "DF") (= dist "D") (= dist "DecimalFeet") (= dist "decimalfeet") (= DIST "DECIMALFEET"))
+    (progn
+      (setq dist (getstring T "\nDistance(Decimal Feet): "))
+      (setq units "DF")
+      )
+    )
+
+  (if (or (= dist "l") (= dist "L") (= dist "Links") (= dist "LINKS") (= DIST "links"))
+    (progn
+      (setq dist (getstring T "\nDistance(Links): "))
+      (setq units "L")
+      )
+    )
+   (if (or (= dist "m") (= dist "M") (= dist "Meters") (= dist "meters") (= DIST "METERS"))
+    (progn
+      (setq dist (getstring T "\nDistance(Meters): "))
+      (setq units "M")
+      )
+    )
+
+      
+
+(setq arcdist "Y")
+
+
+      
+      );if arc
+    ;else
+    (setq arcdist "N")
+
+    );ARC DISTANCE
+
+  
+
+  
   (setq prevdist dist)
   
 
@@ -1928,7 +1982,7 @@
       
       )); if & p links
 	      
-	      
+(if (= arcdist "Y")(setq dist (rtos (* (* 2 (atof radius)) (sin (/ (atof dist) (* 2 (atof radius))))))))	      
 
     ;DRAW LINE 1
   
@@ -2003,12 +2057,25 @@
   ;(if (= units "L")(setq arclength (rtos ( * (/ (atof radius) 0.201168) O) 2 3)))
 	    (setq remhalfO (/ (- pi O) 2))
 	    (if (= curverot "ccw")(setq raybearing (+ (angle ap1 ap2) remhalfO))(setq raybearing (- (angle ap1 ap2) remhalfO)))
-	    
 
+;round arclength
+  (if (= qround "YES")
+    (progn
+      (SETQ ARCLENGTH (ATOF ARCLENGTH))
+ (IF (< arclength DISTMAX1) (SETQ DROUND DRND1))
+    (IF (AND (> arclength DISTMAX1)(< arclength DISTMAX2)) (SETQ DROUND DRND2))
+    (IF (> arclength DISTMAX2)(SETQ DROUND DRND3))
+			
+    (SETQ LIP (FIX (/ arclength DROUND)))
+    (SETQ LFP (- (/ arclength DROUND) LIP))
+    (IF (>= LFP 0.5 ) (SETQ LIP (+ LIP 1)))
+    (SETQ arclength (* LIP DROUND))
+    
+    (SETQ ARCLENGTH (RTOS arclength 2 3))
+    ;(IF (< arclength 1) (SETQ DTS (STRCAT "0" DTS)))
+ ))
 
-
-	    
-	    (setq curvecen (polar ap1 raybearing  (atof radius)))
+  (setq curvecen (polar ap1 raybearing  (atof radius)))
   	    (setq curvecenc (strcat (rtos (car curvecen) 2 6) "," (rtos (cadr curvecen) 2 6)))
   ;calc curve midpoint
   (setq a1 (angle curvecen ap1))
@@ -2070,7 +2137,15 @@
   (while (> 1 0) (progn
 		   (setq bearing (getstring "\nChord Bearing [Last]: "))
 
-        (setq dist (getstring T (strcat "\nChord Distance [Last]" units ":")))
+        (setq dist (getstring T (strcat "\nChord Distance [Last/ArcDistance]" units ":")))
+
+		     (if (or (= dist "a") (= dist "A") (= dist "ArcDistance") (= dist "arcdistance") (= DIST "ARCDISTANCE"))
+    (progn
+      (setq arcdist "Y")
+      (setq dist (getstring T (strcat "\nArc Distance " units ":")))
+      )
+		     (setq arcdist "N"))
+		   
 (setq radius (getstring (strcat "\nRadius [Last] (" units "):")))
 		   (if (or (= bearing "Last") (= bearing "L") (= bearing "l") (= bearing "" )) (setq bearing lbearing))
 		   (if (or (= dist "Last") (= dist "L") (= dist "l") (= dist "")) (setq dist prevdist))
@@ -2366,7 +2441,7 @@
       
       )); if & p links
 	      
-	      
+(if (= arcdist "Y")(setq dist (rtos (* (* 2 (atof radius)) (sin (/ (atof dist) (* 2 (atof radius))))))))	      
 
     ;DRAW LINE 1
   (setq dist (rtos (atof dist)2 3));remove trailing zeros
@@ -2467,6 +2542,22 @@
   (if (= rswitch  "T")(setq curverot rcurverot))
 
 		   
+;round arclength
+  (if (= qround "YES")
+    (progn
+      (SETQ ARCLENGTH (ATOF ARCLENGTH))
+ (IF (< arclength DISTMAX1) (SETQ DROUND DRND1))
+    (IF (AND (> arclength DISTMAX1)(< arclength DISTMAX2)) (SETQ DROUND DRND2))
+    (IF (> arclength DISTMAX2)(SETQ DROUND DRND3))
+			
+    (SETQ LIP (FIX (/ arclength DROUND)))
+    (SETQ LFP (- (/ arclength DROUND) LIP))
+    (IF (>= LFP 0.5 ) (SETQ LIP (+ LIP 1)))
+    (SETQ arclength (* LIP DROUND))
+    
+    (SETQ ARCLENGTH (RTOS arclength 2 3))
+    ;(IF (< arclength 1) (SETQ DTS (STRCAT "0" DTS)))
+ ))		   
 
 		   
     (if (/= comment "")(setq ocomment (strcat "><FieldNote>\"" comment "\"</FieldNote></ReducedArcObservation>"))(setq ocomment "/>"))
@@ -11474,13 +11565,16 @@
   (setq currl 0);stores the current building elevation
 
   ;2. Select File
-  (setq xmlfilen (getfiled "Select XML file" "" "xml" 2))
+  (setq xmlfilen (getfiled "Select XML file" folderloc "xml" 2))
   (setq xmlfile (open xmlfilen "r"))
   (setq linetext "")
   (setq maxeast -100000000000000000000000000000.1)
   (setq mineast  100000000000000000000000000000.1)
   (setq minnorth 10000000000000000000000000000.1)
   (setq daf1 "")
+
+  
+  (setq folderloc (substr xmlfilen 1 (+ (vl-string-position 92 xmlfilen 1 T) 1)))
 
 
   ;3. CHECK TO MAKE SURE FILE IS LINEFED
@@ -13983,15 +14077,29 @@
 	    (setq stringpos (vl-string-search "desc" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 6)))
             (setq rolayer (substr linetext (+ stringpos 7) (-(- wwpos 1)(+ stringpos 5))))
-	    ;DSM height difference
+	     ;DSM height difference and irregular lines
 	    (if (= rolayer "HeightDifference")(setq rolayer "Height Difference"))
 	    (if (= rolayer "IrregularLine") (progn
 					      (setq rolayer "Irregular Right Lines")
-					      (princ "\nNon-schema use of desc enumertion - Irrregularline, please report to LRS")
+					      (princ "\nNon-schema use of desc enumeration - Irrregularline - please report to LRS")
 					      ))
 	    (if (= rolayer "natural boundary") (progn
 					      (setq rolayer "Irregular Right Lines")
 					      ))
+	    	    ;check desc against schema
+	    (if (and (/= rolayer "Boundary")
+		     (/= rolayer "Connection")
+		     (/= rolayer "Road")
+		     (/= rolayer "Road Extent")
+		     (/= rolayer "Reference")
+		     (/= rolayer "Height Difference")
+	             (/= rolayer "Irregular Right Lines"))
+	      (progn
+		
+		(princ (strcat "\nNon-Schema use of desc enumeration - " rolayer " - \"connection\" used, please report to LRS"))
+			       (setq rolayer "Connection")
+		))
+	   
 
 	    (setq stringpos (vl-string-search "setupID" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
@@ -15207,6 +15315,19 @@
 	    (setq stringpos (vl-string-search "desc" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 6)))
             (setq rolayer (substr linetext (+ stringpos 7) (-(- wwpos 1)(+ stringpos 5))))
+
+	     	    ;check desc against schema
+	    (if (and (/= rolayer "Boundary")
+		     (/= rolayer "Connection")
+		     (/= rolayer "Road")
+		     (/= rolayer "Road Extent")
+		     (/= rolayer "Reference")
+		     (/= rolayer "Height Difference"))
+	      (progn
+		
+		(princ (strcat "\n Non-Schema use of desc enumeration - " rolayer " - \"connection\" used, please report to LRS"))
+			       (setq rolayer "Connection")
+		))
 
 	    (setq stringpos (vl-string-search "setupID" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
@@ -21558,17 +21679,109 @@
  ; (alert (strcat "\n" sp " to " target " oc" (rtos obscount 2 0) "-" (rtos (length orderlist) 2 0) "-" (rtos (length cgpointnum) 2 0)))
 
   (if (= (setq remlist (member target cgpointnum)) nil)
-    (progn
+    (progn;if not in list
       (setq cgpointnum (append cgpointnum (list target)))
       (setq cgpointco (append cgpointco (list p2)))
+      (setq networklist (append networklist (list (strcat nwls "," target))))
 (setq orderlist (append orderlist (list order)))
       
       (setq remlist (member target cgpointnum))
        (setq existco (nth (- (length cgpointnum)(length remlist)) cgpointco))
       )
-    (progn
+    (progn;if in list
       (setq existco (nth (- (length cgpointnum)(length remlist)) cgpointco))
-      (if (> (atof (rtos (distance existco p2) 2 3)) 0)
+      (setq existnwls (nth (- (length cgpointnum)(length remlist)) networklist))
+
+      
+      (setq newnwls (strcat nwls "," target))
+      (princ (strcat "\nAt "target))
+           (princ (strcat "\nExisting loop - " existnwls))
+      (princ (strcat "\nClosing loop - " newnwls))
+      
+
+;parse csv string to list
+      (setq newlist nil)
+      (setq existlist nil)
+      
+      (while (/= (setq ,pos (vl-string-position 44 newnwls 0)) nil)
+      (progn
+	(setq newlist (append newlist (list (substr newnwls 1 ,pos))))
+	(setq newnwls (substr newnwls (+ ,pos 2) ))
+))
+      (setq newlist (append newlist (list newnwls)))
+        (while (/= (setq ,pos (vl-string-position 44 existnwls 0)) nil)
+      (progn
+	(setq existlist (append existlist (list (substr existnwls 1 ,pos))))
+	(setq existnwls (substr existnwls (+ ,pos 2)))
+))
+      (setq existlist (append existlist (list existnwls)))
+      
+      (setq newlist (reverse newlist))
+      (setq existlist (reverse existlist))
+
+      (setq nlcount 1)
+      (setq distcov 0)
+      (setq prevpt target)
+      (setq n 1)
+      ;search through list adding setup and distances until you find a common point
+      (while (= (setq exremlist (member (nth nlcount newlist) existlist)) nil)
+	(progn
+	  (setq frompt (nth (- (length cgpointco)(length (member prevpt cgpointnum)))cgpointco))
+	  (setq topt (nth (- (length cgpointco)(length (member (nth nlcount newlist) cgpointnum))) cgpointco))
+	  (setq distcov (+ distcov(distance frompt topt)))
+	;	(princ (strcat "\nFrom " prevpt " " (rtos (car frompt) 2 3)","(rtos (cadr frompt) 2 3)))
+	;	 (princ (strcat "\nto " (nth nlcount newlist) (rtos (car topt) 2 3)","(rtos (cadr topt) 2 3)))
+
+	 ; (princ (strcat "\n NDistcov" (rtos distcov 2 3)))
+	  (setq n (+ n 1))
+	  (setq prevpt (nth nlcount newlist))
+	  (setq nlcount (+ nlcount 1))
+	  ))
+      
+	
+	  (setq frompt (nth (- (length cgpointco)(length (member prevpt cgpointnum)))cgpointco))
+	  (setq topt (nth (- (length cgpointco)(length (member (nth nlcount newlist) cgpointnum))) cgpointco))
+	  (setq distcov (+ distcov (distance frompt topt)))
+	;	(princ (strcat "\nFrom " prevpt " " (rtos (car frompt) 2 3)","(rtos (cadr frompt) 2 3)))
+	;	 (princ (strcat "\nto " (nth nlcount newlist) (rtos (car topt) 2 3)","(rtos (cadr topt) 2 3)))
+
+	 ; (princ (strcat "\n NDistcov" (rtos distcov 2 3)))
+
+      (setq numexlist (+ (- (length existlist)(length exremlist)) 1))
+      ;(princ (strcat "\n Numexlist - " (rtos numexlist 2 0)))
+      (setq felist nil)
+      (setq nxlcount 0)
+      (repeat numexlist
+	(setq felist (append felist (list (nth nxlcount existlist))))
+	(setq nxlcount (+ nxlcount 1))
+	)
+      
+
+      
+     	  (setq excount 1)
+      (setq prevpt target)
+            ;repeat for exist list after finding common point
+      (repeat (- (length felist) 1)
+	(setq frompt (nth (- (length cgpointco)(length (member prevpt cgpointnum)))cgpointco))
+	  (setq topt (nth (- (length cgpointco)(length (member (nth excount felist) cgpointnum))) cgpointco))
+	(setq distcov (+ distcov (distance frompt topt)))
+;	(princ (strcat "\nFrom " prevpt " " (rtos (car frompt) 2 3)","(rtos (cadr frompt) 2 3)))
+;		 (princ (strcat "\nto " (nth excount felist) (rtos (car topt) 2 3)","(rtos (cadr topt) 2 3)))
+;(princ (strcat "\n EDistcov" (rtos distcov 2 3)))
+	(setq n (+ n 1))
+	(setq prevpt (nth excount existlist))
+	(setq excount (+ excount 1))
+	)
+
+                 
+ 
+      (princ (strcat "\nDistance Covered - " (rtos distcov 2 3) "    Measured misclose- " (rtos (distance existco p2) 2 3)))
+      (princ (strcat "\nNumber of setups - " (rtos n 2 0)))
+
+       (if (> (distance existco p2) largemiss )(setq largemiss (distance existco p2)))
+
+      
+      (if (> (atof (rtos (distance existco p2) 2 3)) 0.001)
 	(progn
 
 	  
@@ -21592,6 +21805,7 @@
 	      (setq cgpointnum (append cgpointnum (list target)))
               (setq cgpointco (append cgpointco (list p2)))
               (setq orderlist (append orderlist (list order)))
+	      (setq networklist (append networklist (list (strcat nwls "," target))))
 	      ;  (alert (strcat "\n" sp " to " target " oc" (rtos obscount 2 0) "-" (rtos (length orderlist) 2 0) "-" (rtos (length cgpointnum) 2 0)))
 
 	      )
@@ -21617,6 +21831,7 @@
   (setq conobs nil)
   (setq cgpointnum (list));list of coordinate geometery names
   (setq cgpointco (list)) ;listof coordunate geometery coorindates
+  (setq networklist (list));list of points to get to position
   (setq rorder (list));lists for order of insertion of lines
   (setq border (list))
   (setq corder (list))
@@ -21624,6 +21839,7 @@
   (setq origcgpointlist (list));original coordintes for establishing shifts
   (setq newcgpointlist (list));new coorinates of the same points
   (setq dellines (ssadd))
+  (setq largemiss 0)
   (setq NCGlist (list));list instruments stations not connected by geomtery (eg BM's only connected by height diffs)
 
   (setq cgpointlist (list));list of names coordinates and types for importer
@@ -21659,6 +21875,18 @@
 	    (setq stringpos (vl-string-search "desc" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 6)))
             (setq rolayer (substr linetext (+ stringpos 7) (-(- wwpos 1)(+ stringpos 5))))
+	    ;check desc against schema
+	    (if (and (/= rolayer "Boundary")
+		     (/= rolayer "Connection")
+		     (/= rolayer "Road")
+		     (/= rolayer "Road Extent")
+		     (/= rolayer "Reference")
+		     (/= rolayer "Height Difference"))
+	      (progn
+		
+		(princ (strcat "\n Non-Schema use of desc enumeration - " rolayer " - \"connection\" used, please report to LRS"))
+			       (setq rolayer "Connection")
+		))
 
 	    (setq stringpos (vl-string-search "setupID" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
@@ -21774,6 +22002,20 @@
 	    (setq stringpos (vl-string-search "desc" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 6)))
             (setq rolayer (substr linetext (+ stringpos 7) (-(- wwpos 1)(+ stringpos 5))))
+
+	    	    ;check desc against schema
+	    (if (and (/= rolayer "Boundary")
+		     (/= rolayer "Connection")
+		     (/= rolayer "Road")
+		     (/= rolayer "Road Extent")
+		     (/= rolayer "Reference")
+		     (/= rolayer "Height Difference"))
+	      (progn
+		
+		(princ (strcat "\n Non-Schema use of desc enumeration - " rolayer " - connection used"))
+			       (setq rolayer "Connection")
+		))
+
 
 	    (setq stringpos (vl-string-search "setupID" linetext ))
 	    (setq wwpos (vl-string-position 34 linetext (+ stringpos 9)))
@@ -21911,6 +22153,8 @@
    (setq cgpointnum (append cgpointnum (list sp)))
   (setq cgpointco (append cgpointco (list startpoint)))
   (setq orderlist (append orderlist (list 1)))
+  (setq networklist (append networklist (list cgpointnum)))
+  (setq nwls sp)
   
 (setq obspos 0)
   
@@ -22073,7 +22317,7 @@
     
     (setq remlist (member sp cgpointnum))
     (setq startpoint (nth (- (length cgpointnum)(length remlist)) cgpointco))
-    
+    (setq nwls (nth (- (length cgpointnum)(length remlist)) networklist))
     
     ;(alert (strcat "\nPoint Switched to " sp  "-" (rtos obscount 2 0)))
     )
@@ -22083,7 +22327,7 @@
 ));p and if while obscount
 
   
-   (PRINC "\nObservation Import Drawing Complete-calculating new point coordinates")
+   (princ (strcat "\nObservation Import Complete - Largest Misclose:" (rtos largemiss 2 3)))  
 
 
  ;Create GG point list
